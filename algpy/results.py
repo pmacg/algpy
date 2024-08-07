@@ -1,6 +1,7 @@
 """Classes and method for processing experimental results."""
 import pandas as pd
 import matplotlib.pyplot as plt
+from typing import List
 
 
 class Results(object):
@@ -9,6 +10,9 @@ class Results(object):
         """Load results from a csv file."""
         self.results_df = pd.read_csv(results_filename, skipinitialspace=True)
         self.algorithm_names = self.results_df['algorithm'].unique()
+
+    def column_names(self) -> List[str]:
+        return self.results_df.columns.values.tolist()
 
     def line_plot(self, x_col, y_col, filename=None):
         """Plot one column of the dataframe against another."""

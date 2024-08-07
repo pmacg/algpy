@@ -13,6 +13,15 @@ class Dataset(ABC):
         pass
 
 
+class NoDataset(Dataset):
+    """Use this when no dataset is needed to compare algorithms."""
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "NoDataset"
+
+
 class PointCloudDataset(Dataset):
     """
     The simplest form of dataset: the data consists of a point cloud in Euclidean space.

@@ -52,7 +52,7 @@ class ExperimentalSuite(object):
                  algorithms: Dict[str, Callable],
                  dataset: Type[algpy.dataset.Dataset],
                  results_filename: str,
-                 alg_fixed_params=None,
+                 alg_fixed_params: Dict[str, Dict]=None,
                  alg_varying_params:  Dict[str, Dict[str, Iterable]] = None,
                  dataset_fixed_params: Dict = None,
                  dataset_varying_params: Dict[str, Iterable] = None,
@@ -126,14 +126,28 @@ class ExperimentalSuite(object):
             columns.append(eval_name)
         return list(OrderedDict.fromkeys(columns))
 
-    def run_all(self):
+    def run_all(self, append_results=False) -> algpy.results.Results:
         """Run all the experiments in this suite."""
-        trial_number = 1
 
-        with (open(self.results_filename, 'w') as results_file):
+        # If we are appending the results, make sure that the header of the results file already matches the
+        # header we would have written.
+        if append_results:
+            existing_results = algpy.results.Results(self.results_filename)
+            if existing_results.column_names() != self.results_columns:
+                raise ValueError("Cannot append results file: column names do not match.")
+            true_trial_number = existing_results.results_df.iloc[-1]["trial_id"] + 1
+        else:
+            true_trial_number = 1
+
+        reported_trial_number = 1
+
+        file_access_string = 'a' if append_results else 'w'
+
+        with open(self.results_filename, file_access_string) as results_file:
             # Write the header line of the results file
-            results_file.write(", ".join(self.results_columns))
-            results_file.write("\n")
+            if not append_results:
+                results_file.write(", ".join(self.results_columns))
+                results_file.write("\n")
 
             for dataset_params in product_dict(**self.dataset_varying_params):
                 full_dataset_params = self.dataset_fixed_params | dataset_params
@@ -142,16 +156,17 @@ class ExperimentalSuite(object):
                 for alg_name, alg in self.algorithms.items():
                     for alg_params in product_dict(**self.alg_varying_params[alg_name]):
                         full_alg_params = self.alg_fixed_params[alg_name] | alg_params
-                        print(f"Trial {trial_number} / {self.num_experiments}: {alg_name} on {dataset} with parameters {full_alg_params}.")
+                        print(f"Trial {reported_trial_number} / {self.num_experiments}: {alg_name} on {dataset} with parameters {full_alg_params}.")
                         this_experiment = Experiment(alg, dataset, full_alg_params, self.evaluation_functions)
                         this_experiment.run()
 
-                        this_result = this_experiment.result | full_dataset_params | full_alg_params | {'algorithm': alg_name, 'trial_id': trial_number}
+                        this_result = this_experiment.result | full_dataset_params | full_alg_params | {'algorithm': alg_name, 'trial_id': true_trial_number}
                         results_file.write(", ".join([str(this_result[col]) if col in this_result else '' for col in self.results_columns]))
                         results_file.write("\n")
                         results_file.flush()
 
-                        trial_number += 1
+                        true_trial_number += 1
+                        reported_trial_number += 1
 
         # Create a dataframe from the results
         self.results = algpy.results.Results(self.results_filename)
