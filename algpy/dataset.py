@@ -25,17 +25,26 @@ class NoDataset(Dataset):
         return "NoDataset"
 
 
-class GraphDataset(Dataset):
+class ClusterableDataset(Dataset):
+    """
+    A dataset which may have ground truth clusters.
+    """
+
+    def __init__(self, labels):
+        self.gt_labels = labels
+
+
+class GraphDataset(ClusterableDataset):
     """
     A dataset whose central data is a graph.
     """
 
-    def __init__(self, data: stag.graph.Graph = None, labels=None):
+    def __init__(self, graph: stag.graph.Graph = None, labels=None):
         """Initialise the dataset with a stag Graph. Optionally, provide ground truth
         labels for classification."""
-        self.data = data
-        self.n = 0 if data is None else data.number_of_vertices()
-        self.gt_labels = labels
+        self.graph = graph
+        self.n = 0 if graph is None else graph.number_of_vertices()
+        super().__init__(labels)
 
 
 class SBMDataset(GraphDataset):
@@ -46,10 +55,10 @@ class SBMDataset(GraphDataset):
     def __init__(self, n: int, k: int, p: float, q: float):
         g = stag.random.sbm(n, k, p, q)
         labels = stag.random.sbm_gt_labels(n, k)
-        super(SBMDataset, self).__init__(data=g, labels=labels)
+        super(SBMDataset, self).__init__(graph=g, labels=labels)
 
 
-class PointCloudDataset(Dataset):
+class PointCloudDataset(ClusterableDataset):
     """
     The simplest form of dataset: the data consists of a point cloud in Euclidean space.
     This is represented internally by a numpy array.
@@ -59,7 +68,7 @@ class PointCloudDataset(Dataset):
         """Initialise the dataset with a numpy array. Optionally, provide labels for classification."""
         self.data = np.array(data)
         self.n, self.d = data.shape
-        self.gt_labels = labels
+        super().__init__(labels)
 
     def plot_clusters(self, labels):
         """

@@ -16,7 +16,7 @@ def test_no_dataset():
 
 def test_graph_dataset():
     graph = stag.graph.cycle_graph(100)
-    dataset = algpy.dataset.GraphDataset(data=graph)
+    dataset = algpy.dataset.GraphDataset(graph=graph)
     assert dataset.n == 100
 
 
@@ -24,7 +24,7 @@ def test_sbm_dataset():
     dataset = algpy.dataset.SBMDataset(n=100, k=2, p=0.5, q=0.1)
     assert dataset.n == 100
 
-    with pytest.raises(Exception, match="positive"):
+    with pytest.raises(Exception, match="p must be between 0 and 1"):
         _ = algpy.dataset.SBMDataset(n=100, k=2, p=-0.5, q=0.1)
 
 
