@@ -7,6 +7,10 @@ import stag.cluster
 import stag.graph
 import scipy.sparse.linalg
 
+# -----------------------------------------------------------------------------
+# Clustering Evaluation
+# -----------------------------------------------------------------------------
+
 
 def adjusted_rand_index(data: algpy.dataset.PointCloudDataset, labels):
     if data.gt_labels is not None:
@@ -14,6 +18,10 @@ def adjusted_rand_index(data: algpy.dataset.PointCloudDataset, labels):
     else:
         raise ValueError('No ground truth labels provided.')
 
+
+# -----------------------------------------------------------------------------
+# Graph Evaluation
+# -----------------------------------------------------------------------------
 
 def num_vertices(_: algpy.dataset.Dataset, graph: stag.graph.Graph):
     return graph.number_of_vertices()

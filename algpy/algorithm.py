@@ -1,13 +1,41 @@
 """
 Create a generic class representing an algorithm which can be applied to a dataset.
 """
+from typing import List, Type, Callable, Dict
+import algpy.dataset
 
-class  Algorithm(object):
 
-    def __init__(self, alg):
-        """Create the algorithm object. The alg parameter should be a function which
-        takes a dataset and a list of parameters and runs the underlying algorithm we are studying."""
-        self.inner_algorithm = alg
+class Algorithm(object):
 
-    def run(self, dataset, params):
-        return self.inner_algorithm(dataset, **params)
+    def __init__(self,
+                 implementation: Callable,
+                 return_type: Type = None,
+                 parameter_names: List[str] = None,
+                 dataset_class: Type[algpy.dataset.Dataset] = algpy.dataset.NoDataset):
+        """Create an algorithm definition. The implementation should be a python method which takes
+        a dataset as a positional argument (if dataset_class is not NoDataset) and
+        the parameters as keyword arguments. The implementation should return an object of type
+        return_type.
+        """
+        self.implementation = implementation
+        self.parameter_names = parameter_names if parameter_names is not None else []
+        self.return_type = return_type
+        self.dataset_class = dataset_class
+
+    def run(self, dataset: algpy.dataset.Dataset, params: Dict):
+        if not isinstance(dataset, self.dataset_class):
+            raise TypeError("Provided dataset type must match dataset_class expected by the implementation.")
+
+        for param in params.keys():
+            if param not in self.parameter_names:
+                raise ValueError("Unexpected parameter name.")
+
+        if self.dataset_class is not algpy.dataset.NoDataset:
+            result = self.implementation(dataset, **params)
+        else:
+            result = self.implementation(**params)
+
+        if not isinstance(result, self.return_type):
+            raise TypeError("Provided result type must match promised return_type.")
+
+        return result

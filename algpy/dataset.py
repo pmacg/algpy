@@ -66,7 +66,10 @@ class PointCloudDataset(Dataset):
         If the data is two-dimensional, plot the data, colored according to the labels.
         """
         if self.d != 2:
-            raise ValueError("Dataset is not two-dimensional")
+            raise ValueError("Dataset is not two-dimensional.")
+
+        if len(labels) != self.n:
+            raise ValueError("Labels length must match number of data points.")
 
         labels = np.array(labels)
 
@@ -87,8 +90,8 @@ class TwoMoonsDataset(PointCloudDataset):
 
     def __init__(self, n=1000, noise=0.07):
         """Initialise the two moons dataset. Optionally, provide the number of points, n, and the noise parameter."""
-        X, y = make_moons(n_samples=n, noise=noise)
-        super(TwoMoonsDataset, self).__init__(data=X, labels=y)
+        x, y = make_moons(n_samples=n, noise=noise)
+        super(TwoMoonsDataset, self).__init__(data=x, labels=y)
 
     def __str__(self):
         return f"TwoMoonsDataset({self.n})"
