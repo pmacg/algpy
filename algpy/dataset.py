@@ -2,8 +2,10 @@
 from sklearn.datasets import make_moons
 import numpy as np
 from abc import ABC, abstractmethod
-import stag.cluster
+import stag.graph
+import stag.random
 import matplotlib.pyplot as plt
+
 
 class Dataset(ABC):
 
@@ -15,11 +17,36 @@ class Dataset(ABC):
 
 class NoDataset(Dataset):
     """Use this when no dataset is needed to compare algorithms."""
+
     def __init__(self):
         pass
 
     def __str__(self):
         return "NoDataset"
+
+
+class GraphDataset(Dataset):
+    """
+    A dataset whose central data is a graph.
+    """
+
+    def __init__(self, data: stag.graph.Graph = None, labels=None):
+        """Initialise the dataset with a stag Graph. Optionally, provide ground truth
+        labels for classification."""
+        self.data = data
+        self.n = 0 if data is None else data.number_of_vertices()
+        self.gt_labels = labels
+
+
+class SBMDataset(GraphDataset):
+    """
+    Create a graph dataset from a stochastic block model.
+    """
+
+    def __init__(self, n: int, k: int, p: float, q: float):
+        g = stag.random.sbm(n, k, p, q)
+        labels = stag.random.sbm_gt_labels(n, k)
+        super(SBMDataset, self).__init__(data=g, labels=labels)
 
 
 class PointCloudDataset(Dataset):
@@ -28,7 +55,7 @@ class PointCloudDataset(Dataset):
     This is represented internally by a numpy array.
     """
 
-    def __init__(self, data: np.array=None, labels=None):
+    def __init__(self, data: np.array = None, labels=None):
         """Initialise the dataset with a numpy array. Optionally, provide labels for classification."""
         self.data = np.array(data)
         self.n, self.d = data.shape

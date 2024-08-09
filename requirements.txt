@@ -4,4 +4,4 @@ stag
 numpy
 pandas
 build
-
+pytest
