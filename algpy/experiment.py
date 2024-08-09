@@ -9,6 +9,7 @@ from collections import OrderedDict
 import algpy.algorithm
 import algpy.dataset
 import algpy.results
+import algpy.evaluation
 
 
 def product_dict(**kwargs):
@@ -20,7 +21,7 @@ def product_dict(**kwargs):
 class Experiment(object):
 
     def __init__(self, alg: algpy.algorithm.Algorithm, dataset: algpy.dataset.Dataset, params,
-                 evaluation_functions=None):
+                 evaluators: List[algpy.evaluation.Evaluator] = None):
         """An experiment is a single instance of running an algorithm on a dataset with a set of parameters.
         The running time of the algorithm is measured by default. In addition to this, the evaluation_functions
         variable should contain a dictionary of methods which will be applied to the result of the algorithm.
@@ -28,7 +29,7 @@ class Experiment(object):
         self.alg = alg
         self.dataset = dataset
         self.params = params
-        self.evaluation_functions = evaluation_functions
+        self.evaluators = evaluators
 
         # The result will be a dictionary of information we want to track after each run.
         self.result = {}
@@ -42,24 +43,26 @@ class Experiment(object):
         self.result['running_time_s'] = end_time - start_time
 
         # Apply the evaluation functions
-        if self.evaluation_functions:
-            for metric, func in self.evaluation_functions.items():
-                self.result[metric] = func(self.dataset, alg_output)
+        if self.evaluators:
+            for evaluator in self.evaluators:
+                self.result[evaluator.name] = evaluator.apply(self.dataset, alg_output)
+
 
 class ExperimentalSuite(object):
 
     def __init__(self,
-                 algorithms: Dict[str, Callable],
+                 algorithms: List[algpy.algorithm.Algorithm],
                  dataset: Type[algpy.dataset.Dataset],
                  results_filename: str,
-                 alg_fixed_params: Dict[str, Dict]=None,
+                 alg_fixed_params: Dict[str, Dict] = None,
                  alg_varying_params:  Dict[str, Dict[str, Iterable]] = None,
                  dataset_fixed_params: Dict = None,
                  dataset_varying_params: Dict[str, Iterable] = None,
-                 evaluation_functions: Dict[str, Callable] = None):
+                 evaluators: List[algpy.evaluation.Evaluator] = None):
         """Run a suite of experiments while varying some parameters."""
 
-        self.algorithms = {name: algpy.algorithm.Algorithm(func) for name, func in algorithms.items()}
+        self.algorithms = algorithms
+        self.algorithm_names = [alg.name for alg in self.algorithms]
 
         # Automatically populate the parameter dictionaries
         if alg_fixed_params is None:
@@ -71,12 +74,19 @@ class ExperimentalSuite(object):
         if dataset_varying_params is None:
             dataset_varying_params = {}
 
-        for alg_name in self.algorithms.keys():
+        for alg in self.algorithms:
+            alg_name = alg.name
+
             # Check that every algorithm has an entry in the params dictionary
             if alg_name not in alg_fixed_params:
                 alg_fixed_params[alg_name] = {}
             if alg_name not in alg_varying_params:
                 alg_varying_params[alg_name] = {}
+
+            # Check that the parameters exist for the algorithm
+            for param in alg_fixed_params[alg_name]:
+                if param not in alg.parameter_names:
+                    raise ValueError(f"Parameter {param} not configured for {alg_name} algorithm.")
 
             # Convert the parameter iterables to lists
             for param_name in alg_varying_params[alg_name].keys():
@@ -91,7 +101,7 @@ class ExperimentalSuite(object):
         self.dataset_class = dataset
         self.dataset_fixed_params = dataset_fixed_params
         self.dataset_varying_params = dataset_varying_params
-        self.evaluation_functions = evaluation_functions
+        self.evaluators = evaluators
         self.results_filename = results_filename
 
         self.results_columns = self.get_results_df_columns()
@@ -101,7 +111,7 @@ class ExperimentalSuite(object):
         for param_name, values in self.dataset_varying_params.items():
             num_datasets *= len(values)
         self.num_experiments = 0
-        for alg_name in self.algorithms.keys():
+        for alg_name in self.algorithm_names:
             num_experiments_this_alg = 1
             for param_name, values in self.alg_varying_params[alg_name].items():
                 num_experiments_this_alg *= len(values)
@@ -116,14 +126,14 @@ class ExperimentalSuite(object):
             columns.append(param_name)
         for param_name in self.dataset_varying_params.keys():
             columns.append(param_name)
-        for alg_name in self.algorithms.keys():
+        for alg_name in self.algorithm_names:
             for param_name in self.alg_fixed_params[alg_name].keys():
                 columns.append(param_name)
             for param_name in self.alg_varying_params[alg_name].keys():
                 columns.append(param_name)
         columns.append('running_time_s')
-        for eval_name in self.evaluation_functions.keys():
-            columns.append(eval_name)
+        for evaluator in self.evaluators:
+            columns.append(evaluator.name)
         return list(OrderedDict.fromkeys(columns))
 
     def run_all(self, append_results=False) -> algpy.results.Results:
@@ -153,14 +163,16 @@ class ExperimentalSuite(object):
                 full_dataset_params = self.dataset_fixed_params | dataset_params
                 dataset = self.dataset_class(**full_dataset_params)
 
-                for alg_name, alg in self.algorithms.items():
+                for alg in self.algorithms:
+                    alg_name = alg.name
                     for alg_params in product_dict(**self.alg_varying_params[alg_name]):
                         full_alg_params = self.alg_fixed_params[alg_name] | alg_params
                         print(f"Trial {reported_trial_number} / {self.num_experiments}: {alg_name} on {dataset} with parameters {full_alg_params}.")
-                        this_experiment = Experiment(alg, dataset, full_alg_params, self.evaluation_functions)
+                        this_experiment = Experiment(alg, dataset, full_alg_params, self.evaluators)
                         this_experiment.run()
 
-                        this_result = this_experiment.result | full_dataset_params | full_alg_params | {'algorithm': alg_name, 'trial_id': true_trial_number}
+                        this_result = this_experiment.result | full_dataset_params | full_alg_params | \
+                                      {'algorithm': alg_name, 'trial_id': true_trial_number}
                         results_file.write(", ".join([str(this_result[col]) if col in this_result else '' for col in self.results_columns]))
                         results_file.write("\n")
                         results_file.flush()

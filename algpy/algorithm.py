@@ -8,6 +8,7 @@ import algpy.dataset
 class Algorithm(object):
 
     def __init__(self,
+                 name: str,
                  implementation: Callable,
                  return_type: Type = None,
                  parameter_names: List[str] = None,
@@ -21,6 +22,7 @@ class Algorithm(object):
         self.parameter_names = parameter_names if parameter_names is not None else []
         self.return_type = return_type
         self.dataset_class = dataset_class
+        self.name = name
 
     def run(self, dataset: algpy.dataset.Dataset, params: Dict):
         if not isinstance(dataset, self.dataset_class):
@@ -39,3 +41,6 @@ class Algorithm(object):
             raise TypeError("Provided result type must match promised return_type.")
 
         return result
+
+    def __repr__(self):
+        return self.name

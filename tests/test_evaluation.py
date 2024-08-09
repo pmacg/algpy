@@ -73,6 +73,6 @@ def test_avg_degree():
 
 def test_eigenvalue():
     graph = stag.random.sbm(100, 2, 0.8, 0.01)
-    eig = algpy.evaluation.normalised_laplacian_second_eigenvalue_impl(algpy.dataset.NoDataset(),
-                                                                       graph)
+    eig = algpy.evaluation.normalised_laplacian_second_eigenvalue.apply(algpy.dataset.NoDataset(),
+                                                                        graph)
     assert 0.2 > eig > 0

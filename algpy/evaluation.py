@@ -13,6 +13,7 @@ import scipy.sparse.linalg
 class Evaluator(object):
 
     def __init__(self,
+                 name: str,
                  implementation: Callable,
                  alg_result_type: Type = None,
                  dataset_class: Type[algpy.dataset.Dataset] = algpy.dataset.NoDataset):
@@ -22,6 +23,7 @@ class Evaluator(object):
         self.implementation = implementation
         self.alg_result_type = alg_result_type
         self.dataset_class = dataset_class
+        self.name = name
 
     def apply(self, dataset: algpy.dataset.Dataset, alg_result):
         if not isinstance(dataset, self.dataset_class):
@@ -37,19 +39,23 @@ class Evaluator(object):
 
         return result
 
+    def __str__(self):
+        return self.name
+
 # -----------------------------------------------------------------------------
 # Clustering Evaluation
 # -----------------------------------------------------------------------------
 
 
-def ari_impl(data: algpy.dataset.ClusterableDataset, labels):
+def __ari_impl(data: algpy.dataset.ClusterableDataset, labels):
     if data.gt_labels is not None:
         return stag.cluster.adjusted_rand_index(data.gt_labels, labels)
     else:
         raise ValueError('No ground truth labels provided.')
 
 
-adjusted_rand_index = Evaluator(ari_impl,
+adjusted_rand_index = Evaluator('adjusted_rand_index',
+                                __ari_impl,
                                 alg_result_type=np.ndarray,
                                 dataset_class=algpy.dataset.ClusterableDataset)
 
@@ -58,30 +64,33 @@ adjusted_rand_index = Evaluator(ari_impl,
 # Graph Evaluation
 # -----------------------------------------------------------------------------
 
-def num_vertices_impl(_: algpy.dataset.Dataset, graph: stag.graph.Graph):
+def __num_vertices_impl(_: algpy.dataset.Dataset, graph: stag.graph.Graph):
     return graph.number_of_vertices()
 
 
-num_vertices = Evaluator(num_vertices_impl,
+num_vertices = Evaluator('number_of_vertices',
+                         __num_vertices_impl,
                          alg_result_type=stag.graph.Graph,
                          dataset_class=algpy.dataset.Dataset)
 
 
-def avg_degree_impl(_: algpy.dataset.Dataset, graph: stag.graph.Graph):
+def __avg_degree_impl(_: algpy.dataset.Dataset, graph: stag.graph.Graph):
     return graph.average_degree()
 
 
-avg_degree = Evaluator(avg_degree_impl,
+avg_degree = Evaluator('average_degree',
+                       __avg_degree_impl,
                        alg_result_type=stag.graph.Graph,
                        dataset_class=algpy.dataset.Dataset)
 
 
-def normalised_laplacian_second_eigenvalue_impl(_: algpy.dataset.Dataset, graph: stag.graph.Graph):
+def __normalised_laplacian_second_eigenvalue_impl(_: algpy.dataset.Dataset, graph: stag.graph.Graph):
     lap = graph.normalised_laplacian().to_scipy()
     eigs, _ = scipy.sparse.linalg.eigsh(lap, which='SM', k=2)
     return eigs[1]
 
 
-normalised_laplacian_second_eigenvalue = Evaluator(normalised_laplacian_second_eigenvalue_impl,
+normalised_laplacian_second_eigenvalue = Evaluator('lap_second_eigenvalue',
+                                                   __normalised_laplacian_second_eigenvalue_impl,
                                                    alg_result_type=stag.graph.Graph,
                                                    dataset_class=algpy.dataset.Dataset)

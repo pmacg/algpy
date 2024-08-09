@@ -21,7 +21,8 @@ def no_dataset_impl(n=10):
 
 def test_algorithm():
     # Test the algorithm class as it is intended to be used.
-    kmeans_algorithm = algpy.algorithm.Algorithm(kmeans_impl,
+    kmeans_algorithm = algpy.algorithm.Algorithm('kmeans',
+                                                 kmeans_impl,
                                                  return_type=np.ndarray,
                                                  dataset_class=algpy.dataset.PointCloudDataset,
                                                  parameter_names=['k'])
@@ -32,7 +33,8 @@ def test_algorithm():
 
 def test_bad_return_type():
     # Specify the wrong return type
-    kmeans_algorithm = algpy.algorithm.Algorithm(kmeans_impl,
+    kmeans_algorithm = algpy.algorithm.Algorithm('kmeans',
+                                                 kmeans_impl,
                                                  return_type=List,
                                                  dataset_class=algpy.dataset.PointCloudDataset,
                                                  parameter_names=['k'])
@@ -45,7 +47,8 @@ def test_bad_return_type():
 
 def test_bad_parameter_names():
     # Specify the wrong parameter names
-    kmeans_algorithm = algpy.algorithm.Algorithm(kmeans_impl,
+    kmeans_algorithm = algpy.algorithm.Algorithm('kmeans',
+                                                 kmeans_impl,
                                                  return_type=np.ndarray,
                                                  dataset_class=algpy.dataset.PointCloudDataset,
                                                  parameter_names=['m'])
@@ -58,7 +61,8 @@ def test_bad_parameter_names():
 
 def test_unspecified_parameter():
     # Test the algorithm class as it is intended to be used.
-    kmeans_algorithm = algpy.algorithm.Algorithm(kmeans_impl,
+    kmeans_algorithm = algpy.algorithm.Algorithm('kmeans',
+                                                 kmeans_impl,
                                                  return_type=np.ndarray,
                                                  dataset_class=algpy.dataset.PointCloudDataset,
                                                  parameter_names=['k'])
@@ -69,7 +73,8 @@ def test_unspecified_parameter():
 
 
 def test_no_dataset():
-    cube_algorithm = algpy.algorithm.Algorithm(no_dataset_impl,
+    cube_algorithm = algpy.algorithm.Algorithm('power',
+                                               no_dataset_impl,
                                                return_type=int,
                                                parameter_names=['n'])
 
@@ -77,7 +82,8 @@ def test_no_dataset():
 
 
 def test_wrong_dataset():
-    cube_algorithm = algpy.algorithm.Algorithm(no_dataset_impl,
+    cube_algorithm = algpy.algorithm.Algorithm('power',
+                                               no_dataset_impl,
                                                return_type=int,
                                                parameter_names=['n'])
 
