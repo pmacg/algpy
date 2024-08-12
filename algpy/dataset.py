@@ -52,7 +52,9 @@ class SBMDataset(GraphDataset):
     Create a graph dataset from a stochastic block model.
     """
 
-    def __init__(self, n: int, k: int, p: float, q: float):
+    def __init__(self, n: int = 1000, k: int = 10, p: float = 0.5, q: float = 0.1):
+        n = int(n)
+        k = int(k)
         g = stag.random.sbm(n, k, p, q)
         labels = stag.random.sbm_gt_labels(n, k)
         super(SBMDataset, self).__init__(graph=g, labels=labels)

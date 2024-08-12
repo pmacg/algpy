@@ -28,6 +28,12 @@ def test_sbm_dataset():
         _ = algpy.dataset.SBMDataset(n=100, k=2, p=-0.5, q=0.1)
 
 
+def test_sbm_floats():
+    # Check that we can initialise an SBM dataset with float arguments
+    dataset = algpy.dataset.SBMDataset(n=100.0, k=2.1, p=0.5, q=0.1)
+    assert dataset.n == 100
+
+
 def test_pointcloud_dataset():
     data = np.asarray([[1, 1], [4, 2], [2, 3]])
     _ = algpy.dataset.PointCloudDataset(data=data)
