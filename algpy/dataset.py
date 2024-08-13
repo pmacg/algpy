@@ -53,11 +53,17 @@ class SBMDataset(GraphDataset):
     """
 
     def __init__(self, n: int = 1000, k: int = 10, p: float = 0.5, q: float = 0.1):
-        n = int(n)
-        k = int(k)
-        g = stag.random.sbm(n, k, p, q)
-        labels = stag.random.sbm_gt_labels(n, k)
+        self.n = int(n)
+        self.k = int(k)
+        self.p = p
+        self.q = q
+        g = stag.random.sbm(self.n, self.k, p, q)
+        labels = stag.random.sbm_gt_labels(self.n, self.k)
         super(SBMDataset, self).__init__(graph=g, labels=labels)
+
+
+    def __repr__(self):
+        return f"SBMDataset({self.n}, {self.k}, {self.p}, {self.q})"
 
 
 class PointCloudDataset(ClusterableDataset):
