@@ -36,12 +36,39 @@ def test_experimental_suite():
     experiments = algpy.experiment.ExperimentalSuite(
         [alg1, alg2],
         algpy.dataset.TwoMoonsDataset,
-        "twomoonsresults.csv",
+        "results/twomoonsresults.csv",
         alg_fixed_params={'kmeans': {'k': 2}, 'sc': {'k': 2}},
         dataset_fixed_params={'n': 1000},
         dataset_varying_params={'noise': np.linspace(0, 1, 5)},
         evaluators=[algpy.evaluation.adjusted_rand_index]
         )
+    experiments.run_all()
+
+
+def test_multiple_runs():
+    # Test the experimental suite class as it's intended to be used.
+    alg1 = algpy.algorithm.Algorithm("kmeans",
+                                     kmeans_impl,
+                                     np.ndarray,
+                                     ["k"],
+                                     algpy.dataset.PointCloudDataset)
+    alg2 = algpy.algorithm.Algorithm("sc",
+                                     sc_impl,
+                                     np.ndarray,
+                                     ["k"],
+                                     algpy.dataset.PointCloudDataset)
+
+    experiments = algpy.experiment.ExperimentalSuite(
+        [alg1, alg2],
+        algpy.dataset.TwoMoonsDataset,
+        "results/twomoonsresults.csv",
+        alg_fixed_params={'kmeans': {'k': 2}, 'sc': {'k': 2}},
+        dataset_fixed_params={'n': 1000},
+        dataset_varying_params={'noise': np.linspace(0, 1, 5)},
+        evaluators=[algpy.evaluation.adjusted_rand_index],
+        num_runs=2
+    )
+    assert experiments.num_trials == 20
     experiments.run_all()
 
 
@@ -60,7 +87,7 @@ def test_dynamic_params():
     experiments = algpy.experiment.ExperimentalSuite(
         [alg1, alg2],
         algpy.dataset.TwoMoonsDataset,
-        "twomoonsresults.csv",
+        "results/twomoonsresults.csv",
         alg_fixed_params={'kmeans': {'k': 2}},
         alg_varying_params={'sc': {'k': [(lambda p: int(p['n'] / 100)), 2]}},
         dataset_fixed_params={'noise': 0.1},
