@@ -43,3 +43,29 @@ def test_experimental_suite():
         evaluators=[algpy.evaluation.adjusted_rand_index]
         )
     experiments.run_all()
+
+
+def test_dynamic_params():
+    alg1 = algpy.algorithm.Algorithm("kmeans",
+                                     kmeans_impl,
+                                     np.ndarray,
+                                     ["k"],
+                                     algpy.dataset.PointCloudDataset)
+    alg2 = algpy.algorithm.Algorithm("sc",
+                                     sc_impl,
+                                     np.ndarray,
+                                     ["k"],
+                                     algpy.dataset.PointCloudDataset)
+
+    experiments = algpy.experiment.ExperimentalSuite(
+        [alg1, alg2],
+        algpy.dataset.TwoMoonsDataset,
+        "twomoonsresults.csv",
+        alg_fixed_params={'kmeans': {'k': 2}},
+        alg_varying_params={'sc': {'k': [(lambda p: int(p['n'] / 100)), 2]}},
+        dataset_fixed_params={'noise': 0.1},
+        dataset_varying_params={'n': np.linspace(100, 1000, 5).astype(int)},
+        evaluators=[algpy.evaluation.adjusted_rand_index]
+    )
+    experiments.run_all()
+

@@ -18,6 +18,28 @@ def product_dict(**kwargs):
         yield dict(zip(keys, instance))
 
 
+def resolve_parameters(fixed_parameters, varying_parameters):
+    """
+    Given a dictionary of fixed parameters and a dictionary of varying parameters, resolve the varying parameters
+    which are defined by function.
+    """
+    resolved_parameters = {}
+    dynamic_parameters = []
+    for param_name, value in varying_parameters.items():
+        if not callable(value):
+            # This is a 'static' parameter
+            resolved_parameters[param_name] = value
+        else:
+            # This is a dynamically defined parameter
+            dynamic_parameters.append(param_name)
+
+    # Resolve the dynamic parameters
+    for param_name in dynamic_parameters:
+        resolved_parameters[param_name] = varying_parameters[param_name](fixed_parameters | resolved_parameters)
+
+    return resolved_parameters
+
+
 class Experiment(object):
 
     def __init__(self, alg: algpy.algorithm.Algorithm, dataset: algpy.dataset.Dataset, params,
@@ -55,11 +77,16 @@ class ExperimentalSuite(object):
                  dataset: Type[algpy.dataset.Dataset],
                  results_filename: str,
                  alg_fixed_params: Dict[str, Dict] = None,
-                 alg_varying_params:  Dict[str, Dict[str, Iterable]] = None,
+                 alg_varying_params:  Dict[str, Dict] = None,
                  dataset_fixed_params: Dict = None,
-                 dataset_varying_params: Dict[str, Iterable] = None,
+                 dataset_varying_params: Dict = None,
                  evaluators: List[algpy.evaluation.Evaluator] = None):
-        """Run a suite of experiments while varying some parameters."""
+        """Run a suite of experiments while varying some parameters.
+
+        Varying parameter dictionaries should have parameter names as keys and the values should be an iterable containing:
+            - values to be used directly; or
+            - functions, taking fixed and statically defined variable parameters and returning a parameter value
+        """
 
         self.algorithms = algorithms
         self.algorithm_names = [alg.name for alg in self.algorithms]
@@ -160,13 +187,15 @@ class ExperimentalSuite(object):
                 results_file.write("\n")
 
             for dataset_params in product_dict(**self.dataset_varying_params):
-                full_dataset_params = self.dataset_fixed_params | dataset_params
+                resolved_varying_dataset_params = resolve_parameters(self.dataset_fixed_params, dataset_params)
+                full_dataset_params = self.dataset_fixed_params | resolved_varying_dataset_params
                 dataset = self.dataset_class(**full_dataset_params)
 
                 for alg in self.algorithms:
                     alg_name = alg.name
                     for alg_params in product_dict(**self.alg_varying_params[alg_name]):
-                        full_alg_params = self.alg_fixed_params[alg_name] | alg_params
+                        resolved_varying_alg_params = resolve_parameters(full_dataset_params | self.alg_fixed_params[alg_name], alg_params)
+                        full_alg_params = self.alg_fixed_params[alg_name] | resolved_varying_alg_params
                         print(f"Trial {reported_trial_number} / {self.num_experiments}: {alg_name} on {dataset} with parameters {full_alg_params}.")
                         this_experiment = Experiment(alg, dataset, full_alg_params, self.evaluators)
                         this_experiment.run()
