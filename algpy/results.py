@@ -33,24 +33,29 @@ class Results(object):
     def column_names(self) -> List[str]:
         return self.results_df.columns.values.tolist()
 
-    def line_plot(self, x_col, y_col, filename=None):
+    def line_plot(self, x_col, y_col, filename=None,
+                  ignore_algorithms=None):
         """Plot one column of the dataframe against another."""
+        if ignore_algorithms is None:
+            ignore_algorithms = []
+
         fig, ax = plt.subplots(figsize=(4, 3))
         plt.xlabel(x_col)
         plt.ylabel(y_col)
         plt.grid(True)
 
         for alg_name in self.algorithm_names:
-            this_alg_results = self.stats_df[(self.stats_df['algorithm'] == alg_name)]
-            plt.plot(this_alg_results[f"_mean_{x_col}"],
-                     this_alg_results[f"_mean_{y_col}"],
-                     linewidth=3,
-                     label=alg_name)
-            if self.num_runs > 1:
-                plt.fill_between(this_alg_results[f"_mean_{x_col}"],
-                                 this_alg_results[f"_mean_{y_col}"] - this_alg_results[f"_sem_{y_col}"],
-                                 this_alg_results[f"_mean_{y_col}"] + this_alg_results[f"_sem_{y_col}"],
-                                 alpha=0.2)
+            if alg_name not in ignore_algorithms:
+                this_alg_results = self.stats_df[(self.stats_df['algorithm'] == alg_name)]
+                plt.plot(this_alg_results[f"_mean_{x_col}"],
+                         this_alg_results[f"_mean_{y_col}"],
+                         linewidth=3,
+                         label=alg_name)
+                if self.num_runs > 1:
+                    plt.fill_between(this_alg_results[f"_mean_{x_col}"],
+                                     this_alg_results[f"_mean_{y_col}"] - this_alg_results[f"_sem_{y_col}"],
+                                     this_alg_results[f"_mean_{y_col}"] + this_alg_results[f"_sem_{y_col}"],
+                                     alpha=0.2)
 
         plt.legend()
         if filename:
