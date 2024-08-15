@@ -2,6 +2,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from typing import List
+import numpy as np
 
 
 class Results(object):
@@ -56,6 +57,33 @@ class Results(object):
                                      this_alg_results[f"_mean_{y_col}"] - this_alg_results[f"_sem_{y_col}"],
                                      this_alg_results[f"_mean_{y_col}"] + this_alg_results[f"_sem_{y_col}"],
                                      alpha=0.2)
+
+        plt.legend()
+        if filename:
+            plt.savefig(filename, format="pdf", bbox_inches="tight")
+        plt.show()
+
+    def bar_plot(self, x_col, y_col, x_vals, filename=None,
+                 ignore_algorithms=None):
+        if ignore_algorithms is None:
+            ignore_algorithms = []
+
+        x = np.arange(len(x_vals))  # the label locations
+        width = 0.75 / (len(self.algorithm_names) - len(ignore_algorithms))  # the width of the bars
+
+        fig, ax = plt.subplots(layout='constrained')
+
+        multiplier = 0
+        for alg_name in self.algorithm_names:
+            if alg_name not in ignore_algorithms:
+                offset = width * multiplier
+                alg_results = self.stats_df[(self.stats_df['algorithm'] == alg_name)]
+                y_vals = []
+                for x_val in x_vals:
+                    y_vals.append(alg_results[alg_results[f"_mean_{x_col}"] == x_val][f"_mean_{y_col}"].values[0])
+                rects = ax.bar(x + offset, y_vals, width, label=alg_name)
+                ax.bar_label(rects, padding=3)
+                multiplier += 1
 
         plt.legend()
         if filename:
