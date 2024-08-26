@@ -69,3 +69,23 @@ def test_twomoons_dataset(monkeypatch):
 
     # Check that we can plot the dataset
     dataset.plot_clusters(dataset.gt_labels)
+
+
+def test_knearest_neighbour_dataset(monkeypatch):
+    monkeypatch.setattr(plt, 'show', lambda: None)
+
+    dataset = algpy.dataset.KnnGraphDataset(k=5, pointcloud_class=algpy.dataset.TwoMoonsDataset,
+                                            n=200, noise=0.02)
+
+    # Check that we can plot the dataset
+    dataset.plot_clusters(dataset.gt_labels)
+
+    # Check that we have a number of vertices
+    assert dataset.n == 200
+    assert dataset.graph.number_of_vertices() == 200
+
+
+def test_openml_dataset():
+    dataset = algpy.dataset.OpenMLDataset(name="iris")
+    assert dataset.n == 150
+    assert dataset.d == 4

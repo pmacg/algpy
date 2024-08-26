@@ -1,10 +1,13 @@
 """Implementation of the Dataset object for use with algpy."""
-from sklearn.datasets import make_moons
+from sklearn.datasets import make_moons, fetch_openml
+from sklearn.neighbors import kneighbors_graph
 import numpy as np
 from abc import ABC, abstractmethod
 import stag.graph
 import stag.random
 import matplotlib.pyplot as plt
+from typing import Type, Dict
+import pandas as pd
 
 
 class Dataset(ABC):
@@ -44,7 +47,7 @@ class GraphDataset(ClusterableDataset):
         labels for classification."""
         self.graph = graph
         self.n = 0 if graph is None else graph.number_of_vertices()
-        super().__init__(labels)
+        ClusterableDataset.__init__(self, labels)
 
 
 class SBMDataset(GraphDataset):
@@ -59,7 +62,7 @@ class SBMDataset(GraphDataset):
         self.q = q
         g = stag.random.sbm(self.n, self.k, p, q)
         labels = stag.random.sbm_gt_labels(self.n, self.k)
-        super(SBMDataset, self).__init__(graph=g, labels=labels)
+        GraphDataset.__init__(self, graph=g, labels=labels)
 
 
     def __repr__(self):
@@ -76,7 +79,7 @@ class PointCloudDataset(ClusterableDataset):
         """Initialise the dataset with a numpy array. Optionally, provide labels for classification."""
         self.data = np.array(data)
         self.n, self.d = data.shape
-        super().__init__(labels)
+        ClusterableDataset.__init__(self, labels)
 
     def plot_clusters(self, labels):
         """
@@ -108,7 +111,39 @@ class TwoMoonsDataset(PointCloudDataset):
     def __init__(self, n=1000, noise=0.07):
         """Initialise the two moons dataset. Optionally, provide the number of points, n, and the noise parameter."""
         x, y = make_moons(n_samples=n, noise=noise)
-        super(TwoMoonsDataset, self).__init__(data=x, labels=y)
+        PointCloudDataset.__init__(self, data=x, labels=y)
 
     def __str__(self):
         return f"TwoMoonsDataset({self.n})"
+
+
+class OpenMLDataset(PointCloudDataset):
+    """Load pointcloud data from OpenML."""
+
+    def __init__(self, **kwargs):
+        """Initialise the dataset by downloading from openML. Accepts the same arguments as the
+        sklearn fetch_openml method."""
+        data_info = fetch_openml(**kwargs)
+        if isinstance(data_info.data, pd.DataFrame):
+            data_info.data = data_info.data.to_numpy()
+
+        if isinstance(data_info.target, pd.Series) or isinstance(data_info.target, pd.DataFrame):
+            data_info.target.to_numpy()
+
+        PointCloudDataset.__init__(self, data=data_info.data, labels=data_info.target)
+
+
+class KnnGraphDataset(GraphDataset, PointCloudDataset):
+    """A k-nearest neighbour graph dataset is both a point cloud and a graph dataset."""
+
+    def __init__(self,
+                 k: int = 10,
+                 pointcloud_class: Type[PointCloudDataset] = PointCloudDataset,
+                 **pointcloud_parameters):
+        # Initialise this as a pointcloud dataset
+        pointcloud_class.__init__(self, **pointcloud_parameters)
+
+        # Create the k nearest neighbours graph and initialise as a graph dataset
+        adj_non_symmetric = kneighbors_graph(self.data, k)
+        g = stag.graph.Graph(adj_non_symmetric + adj_non_symmetric.transpose())
+        GraphDataset.__init__(self, graph=g, labels=self.gt_labels)
