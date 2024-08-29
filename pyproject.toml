@@ -4,17 +4,27 @@ build-backend = "hatchling.build"
 
 [project]
 name = "algpy"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
   { name="Peter Macgregor", email="prm4@st-andrews.ac.uk" },
 ]
-description = "A package for running experiments on algorithms."
+description = "A framework for running experiments on algorithms."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+]
+dependencies = [
+    "scikit-learn",
+    "matplotlib",
+    "stag>=2.0.0",
+    "numpy",
+    "pandas",
+    "build",
+    "pytest",
+    "scipy",
 ]
 
 [project.urls]
