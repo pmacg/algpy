@@ -3,7 +3,7 @@ requires = ['hatchling']
 build-backend = "hatchling.build"
 
 [project]
-name = "algpy"
+name = "alglab"
 version = "0.1.0"
 authors = [
   { name="Peter Macgregor", email="prm4@st-andrews.ac.uk" },
