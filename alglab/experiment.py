@@ -6,10 +6,10 @@ import pandas as pd
 import itertools
 from collections import OrderedDict
 
-import algpy.algorithm
-import algpy.dataset
-import algpy.results
-import algpy.evaluation
+import alglab.algorithm
+import alglab.dataset
+import alglab.results
+import alglab.evaluation
 
 
 def product_dict(**kwargs):
@@ -42,8 +42,8 @@ def resolve_parameters(fixed_parameters, varying_parameters):
 
 class Experiment(object):
 
-    def __init__(self, alg: algpy.algorithm.Algorithm, dataset: algpy.dataset.Dataset, params,
-                 evaluators: List[algpy.evaluation.Evaluator] = None):
+    def __init__(self, alg: alglab.algorithm.Algorithm, dataset: alglab.dataset.Dataset, params,
+                 evaluators: List[alglab.evaluation.Evaluator] = None):
         """An experiment is a single instance of running an algorithm on a dataset with a set of parameters.
         The running time of the algorithm is measured by default. In addition to this, the evaluation_functions
         variable should contain a dictionary of methods which will be applied to the result of the algorithm.
@@ -73,15 +73,15 @@ class Experiment(object):
 class ExperimentalSuite(object):
 
     def __init__(self,
-                 algorithms: List[algpy.algorithm.Algorithm],
-                 dataset: Type[algpy.dataset.Dataset],
+                 algorithms: List[alglab.algorithm.Algorithm],
+                 dataset: Type[alglab.dataset.Dataset],
                  results_filename: str,
                  num_runs: int = 1,
                  alg_fixed_params: Dict[str, Dict] = None,
                  alg_varying_params:  Dict[str, Dict] = None,
                  dataset_fixed_params: Dict = None,
                  dataset_varying_params: Dict = None,
-                 evaluators: List[algpy.evaluation.Evaluator] = None):
+                 evaluators: List[alglab.evaluation.Evaluator] = None):
         """Run a suite of experiments while varying some parameters.
 
         Varying parameter dictionaries should have parameter names as keys and the values should be an iterable containing:
@@ -169,13 +169,13 @@ class ExperimentalSuite(object):
             columns.append(evaluator.name)
         return list(OrderedDict.fromkeys(columns))
 
-    def run_all(self, append_results=False) -> algpy.results.Results:
+    def run_all(self, append_results=False) -> alglab.results.Results:
         """Run all the experiments in this suite."""
 
         # If we are appending the results, make sure that the header of the results file already matches the
         # header we would have written.
         if append_results:
-            existing_results = algpy.results.Results(self.results_filename)
+            existing_results = alglab.results.Results(self.results_filename)
             if existing_results.column_names() != self.results_columns:
                 raise ValueError("Cannot append results file: column names do not match.")
             true_trial_number = existing_results.results_df.iloc[-1]["trial_id"] + 1
@@ -222,5 +222,5 @@ class ExperimentalSuite(object):
                             experiment_number += 1
 
         # Create a dataframe from the results
-        self.results = algpy.results.Results(self.results_filename)
+        self.results = alglab.results.Results(self.results_filename)
         return self.results

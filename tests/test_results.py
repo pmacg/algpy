@@ -1,5 +1,5 @@
 """Tests for the results module."""
-from algpy.results import Results
+from alglab.results import Results
 
 
 def test_plots():

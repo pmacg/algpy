@@ -1,20 +1,20 @@
 """Tests for the experiment module."""
 from sklearn.cluster import KMeans, SpectralClustering
 import numpy as np
-import algpy.dataset
-import algpy.experiment
-import algpy.evaluation
-import algpy.algorithm
+import alglab.dataset
+import alglab.experiment
+import alglab.evaluation
+import alglab.algorithm
 
 
 # We will use this KMeans implementation throughout the tests.
-def kmeans_impl(data: algpy.dataset.PointCloudDataset, k=10):
+def kmeans_impl(data: alglab.dataset.PointCloudDataset, k=10):
     sklearn_km = KMeans(n_clusters=k)
     sklearn_km.fit(data.data)
     return sklearn_km.labels_
 
 
-def sc_impl(data: algpy.dataset.PointCloudDataset, k=10):
+def sc_impl(data: alglab.dataset.PointCloudDataset, k=10):
     sklearn_sc = SpectralClustering(n_clusters=k)
     sklearn_sc.fit(data.data)
     return sklearn_sc.labels_
@@ -22,50 +22,50 @@ def sc_impl(data: algpy.dataset.PointCloudDataset, k=10):
 
 def test_experimental_suite():
     # Test the experimental suite class as it's intended to be used.
-    alg1 = algpy.algorithm.Algorithm("kmeans",
+    alg1 = alglab.algorithm.Algorithm("kmeans",
                                      kmeans_impl,
                                      np.ndarray,
                                      ["k"],
-                                     algpy.dataset.PointCloudDataset)
-    alg2 = algpy.algorithm.Algorithm("sc",
+                                     alglab.dataset.PointCloudDataset)
+    alg2 = alglab.algorithm.Algorithm("sc",
                                      sc_impl,
                                      np.ndarray,
                                      ["k"],
-                                     algpy.dataset.PointCloudDataset)
+                                     alglab.dataset.PointCloudDataset)
 
-    experiments = algpy.experiment.ExperimentalSuite(
+    experiments = alglab.experiment.ExperimentalSuite(
         [alg1, alg2],
-        algpy.dataset.TwoMoonsDataset,
+        alglab.dataset.TwoMoonsDataset,
         "results/twomoonsresults.csv",
         alg_fixed_params={'kmeans': {'k': 2}, 'sc': {'k': 2}},
         dataset_fixed_params={'n': 1000},
         dataset_varying_params={'noise': np.linspace(0, 1, 5)},
-        evaluators=[algpy.evaluation.adjusted_rand_index]
+        evaluators=[alglab.evaluation.adjusted_rand_index]
         )
     experiments.run_all()
 
 
 def test_multiple_runs():
     # Test the experimental suite class as it's intended to be used.
-    alg1 = algpy.algorithm.Algorithm("kmeans",
+    alg1 = alglab.algorithm.Algorithm("kmeans",
                                      kmeans_impl,
                                      np.ndarray,
                                      ["k"],
-                                     algpy.dataset.PointCloudDataset)
-    alg2 = algpy.algorithm.Algorithm("sc",
+                                     alglab.dataset.PointCloudDataset)
+    alg2 = alglab.algorithm.Algorithm("sc",
                                      sc_impl,
                                      np.ndarray,
                                      ["k"],
-                                     algpy.dataset.PointCloudDataset)
+                                     alglab.dataset.PointCloudDataset)
 
-    experiments = algpy.experiment.ExperimentalSuite(
+    experiments = alglab.experiment.ExperimentalSuite(
         [alg1, alg2],
-        algpy.dataset.TwoMoonsDataset,
+        alglab.dataset.TwoMoonsDataset,
         "results/twomoonsresults.csv",
         alg_fixed_params={'kmeans': {'k': 2}, 'sc': {'k': 2}},
         dataset_fixed_params={'n': 1000},
         dataset_varying_params={'noise': np.linspace(0, 1, 5)},
-        evaluators=[algpy.evaluation.adjusted_rand_index],
+        evaluators=[alglab.evaluation.adjusted_rand_index],
         num_runs=2
     )
     assert experiments.num_trials == 20
@@ -73,26 +73,26 @@ def test_multiple_runs():
 
 
 def test_dynamic_params():
-    alg1 = algpy.algorithm.Algorithm("kmeans",
+    alg1 = alglab.algorithm.Algorithm("kmeans",
                                      kmeans_impl,
                                      np.ndarray,
                                      ["k"],
-                                     algpy.dataset.PointCloudDataset)
-    alg2 = algpy.algorithm.Algorithm("sc",
+                                     alglab.dataset.PointCloudDataset)
+    alg2 = alglab.algorithm.Algorithm("sc",
                                      sc_impl,
                                      np.ndarray,
                                      ["k"],
-                                     algpy.dataset.PointCloudDataset)
+                                     alglab.dataset.PointCloudDataset)
 
-    experiments = algpy.experiment.ExperimentalSuite(
+    experiments = alglab.experiment.ExperimentalSuite(
         [alg1, alg2],
-        algpy.dataset.TwoMoonsDataset,
+        alglab.dataset.TwoMoonsDataset,
         "results/twomoonsresults.csv",
         alg_fixed_params={'kmeans': {'k': 2}},
         alg_varying_params={'sc': {'k': [(lambda p: int(p['n'] / 100)), 2]}},
         dataset_fixed_params={'noise': 0.1},
         dataset_varying_params={'n': np.linspace(100, 1000, 5).astype(int)},
-        evaluators=[algpy.evaluation.adjusted_rand_index]
+        evaluators=[alglab.evaluation.adjusted_rand_index]
     )
     experiments.run_all()
 

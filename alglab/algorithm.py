@@ -2,7 +2,7 @@
 Create a generic class representing an algorithm which can be applied to a dataset.
 """
 from typing import List, Type, Callable, Dict
-import algpy.dataset
+import alglab.dataset
 
 
 class Algorithm(object):
@@ -12,7 +12,7 @@ class Algorithm(object):
                  implementation: Callable,
                  return_type: Type = None,
                  parameter_names: List[str] = None,
-                 dataset_class: Type[algpy.dataset.Dataset] = algpy.dataset.NoDataset):
+                 dataset_class: Type[alglab.dataset.Dataset] = alglab.dataset.NoDataset):
         """Create an algorithm definition. The implementation should be a python method which takes
         a dataset as a positional argument (if dataset_class is not NoDataset) and
         the parameters as keyword arguments. The implementation should return an object of type
@@ -24,7 +24,7 @@ class Algorithm(object):
         self.dataset_class = dataset_class
         self.name = name
 
-    def run(self, dataset: algpy.dataset.Dataset, params: Dict):
+    def run(self, dataset: alglab.dataset.Dataset, params: Dict):
         if not isinstance(dataset, self.dataset_class):
             raise TypeError("Provided dataset type must match dataset_class expected by the implementation.")
 
@@ -32,7 +32,7 @@ class Algorithm(object):
             if param not in self.parameter_names:
                 raise ValueError("Unexpected parameter name.")
 
-        if self.dataset_class is not algpy.dataset.NoDataset:
+        if self.dataset_class is not alglab.dataset.NoDataset:
             result = self.implementation(dataset, **params)
         else:
             result = self.implementation(**params)
