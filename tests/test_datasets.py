@@ -89,3 +89,4 @@ def test_openml_dataset():
     dataset = alglab.dataset.OpenMLDataset(name="iris")
     assert dataset.n == 150
     assert dataset.d == 4
+    assert isinstance(dataset.gt_labels, np.ndarray)

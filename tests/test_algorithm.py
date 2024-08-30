@@ -3,6 +3,7 @@ import pytest
 
 import alglab.dataset
 import alglab.algorithm
+import alglab.evaluation
 from sklearn.cluster import KMeans
 import numpy as np
 from typing import List
@@ -89,3 +90,17 @@ def test_wrong_dataset():
 
     with pytest.raises(TypeError, match='dataset'):
         _ = cube_algorithm.run(alglab.dataset.TwoMoonsDataset(), {'n': 20})
+
+
+def test_openml_dataset():
+    dataset = alglab.dataset.OpenMLDataset(name="iris")
+    kmeans_algorithm = alglab.algorithm.Algorithm('kmeans',
+                                                  kmeans_impl,
+                                                  return_type=np.ndarray,
+                                                  dataset_class=alglab.dataset.PointCloudDataset,
+                                                  parameter_names=['k'])
+
+    labels = kmeans_algorithm.run(dataset, {'k': 3})
+
+    # Check that evaluation works
+    _ = alglab.evaluation.adjusted_rand_index.apply(dataset, labels)

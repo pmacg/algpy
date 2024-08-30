@@ -127,10 +127,14 @@ class OpenMLDataset(PointCloudDataset):
         if isinstance(data_info.data, pd.DataFrame):
             data_info.data = data_info.data.to_numpy()
 
-        if isinstance(data_info.target, pd.Series) or isinstance(data_info.target, pd.DataFrame):
-            data_info.target.to_numpy()
+        target = data_info.target
+        if isinstance(target, pd.Series) or isinstance(target, pd.DataFrame):
+            if isinstance(target.dtype, pd.CategoricalDtype):
+                target = target.cat.codes.to_numpy()
+            else:
+                target = data_info.target.to_numpy()
 
-        PointCloudDataset.__init__(self, data=data_info.data, labels=data_info.target)
+        PointCloudDataset.__init__(self, data=data_info.data, labels=target)
 
 
 class KnnGraphDataset(GraphDataset, PointCloudDataset):
