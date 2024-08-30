@@ -35,10 +35,19 @@ class Results(object):
         return self.results_df.columns.values.tolist()
 
     def line_plot(self, x_col, y_col, filename=None,
-                  ignore_algorithms=None):
+                  ignore_algorithms=None,
+                  fixed_parameters=None):
         """Plot one column of the dataframe against another."""
         if ignore_algorithms is None:
             ignore_algorithms = []
+
+        if fixed_parameters is None:
+            fixed_parameters = {}
+
+        # Filter all the results by the provided fixed parameters
+        results_to_plot = self.stats_df
+        for param, val in fixed_parameters.items():
+            results_to_plot = results_to_plot[results_to_plot[f'_mean_{param}'] == val]
 
         fig, ax = plt.subplots(figsize=(4, 3))
         plt.xlabel(x_col)
@@ -47,7 +56,7 @@ class Results(object):
 
         for alg_name in self.algorithm_names:
             if alg_name not in ignore_algorithms:
-                this_alg_results = self.stats_df[(self.stats_df['algorithm'] == alg_name)]
+                this_alg_results = results_to_plot[(self.stats_df['algorithm'] == alg_name)]
                 plt.plot(this_alg_results[f"_mean_{x_col}"],
                          this_alg_results[f"_mean_{y_col}"],
                          linewidth=3,
@@ -64,9 +73,18 @@ class Results(object):
         plt.show()
 
     def bar_plot(self, x_col, y_col, x_vals, filename=None,
-                 ignore_algorithms=None):
+                 ignore_algorithms=None,
+                 fixed_parameters=None):
         if ignore_algorithms is None:
             ignore_algorithms = []
+
+        if fixed_parameters is None:
+            fixed_parameters = {}
+
+        # Filter all the results by the provided fixed parameters
+        results_to_plot = self.stats_df
+        for param, val in fixed_parameters.items():
+            results_to_plot = results_to_plot[results_to_plot[param] == val]
 
         x = np.arange(len(x_vals))  # the label locations
         width = 0.75 / (len(self.algorithm_names) - len(ignore_algorithms))  # the width of the bars
@@ -77,7 +95,7 @@ class Results(object):
         for alg_name in self.algorithm_names:
             if alg_name not in ignore_algorithms:
                 offset = width * multiplier
-                alg_results = self.stats_df[(self.stats_df['algorithm'] == alg_name)]
+                alg_results = results_to_plot[(self.stats_df['algorithm'] == alg_name)]
                 y_vals = []
                 for x_val in x_vals:
                     y_vals.append(alg_results[alg_results[f"_mean_{x_col}"] == x_val][f"_mean_{y_col}"].values[0])

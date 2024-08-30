@@ -110,7 +110,7 @@ class TwoMoonsDataset(PointCloudDataset):
 
     def __init__(self, n=1000, noise=0.07):
         """Initialise the two moons dataset. Optionally, provide the number of points, n, and the noise parameter."""
-        x, y = make_moons(n_samples=n, noise=noise)
+        x, y = make_moons(n_samples=int(n), noise=noise)
         PointCloudDataset.__init__(self, data=x, labels=y)
 
     def __str__(self):
