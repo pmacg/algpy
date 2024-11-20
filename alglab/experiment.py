@@ -77,10 +77,7 @@ class ExperimentalSuite(object):
                  dataset: Type[alglab.dataset.Dataset],
                  results_filename: str,
                  num_runs: int = 1,
-                 alg_fixed_params: Dict[str, Dict] = None,
-                 alg_varying_params:  Dict[str, Dict] = None,
-                 dataset_fixed_params: Dict = None,
-                 dataset_varying_params: Dict = None,
+                 parameters: Dict = None,
                  evaluators: List[alglab.evaluation.Evaluator] = None):
         """Run a suite of experiments while varying some parameters.
 
@@ -97,15 +94,53 @@ class ExperimentalSuite(object):
         self.algorithm_names = [alg.name for alg in self.algorithms]
 
         # Automatically populate the parameter dictionaries
-        if alg_fixed_params is None:
-            alg_fixed_params = {}
-        if alg_varying_params is None:
-            alg_varying_params = {}
-        if dataset_fixed_params is None:
-            dataset_fixed_params = {}
-        if dataset_varying_params is None:
-            dataset_varying_params = {}
+        alg_fixed_params = {}
+        alg_varying_params = {}
+        dataset_fixed_params = {}
+        dataset_varying_params = {}
 
+        for param_name, param_value in parameters.items():
+            alg_dataset_name = ""
+            if "." in param_name:
+                alg_dataset_name, parameter_name = param_name.split(".")
+            else:
+                parameter_name = param_name
+
+            if alg_dataset_name == "dataset":
+                try:
+                    _ = iter(param_value)
+                except TypeError:
+                    dataset_fixed_params[parameter_name] = param_value
+                else:
+                    dataset_varying_params[parameter_name] = param_value
+            elif alg_dataset_name != "":
+                for algorithm in self.algorithms:
+                    if algorithm.name == alg_dataset_name and parameter_name not in algorithm.parameter_names:
+                        raise ValueError(f"Algorithm {alg_dataset_name} does not accept parameter {parameter_name}.")
+                try:
+                    _ = iter(param_value)
+                except TypeError:
+                    if alg_dataset_name not in alg_fixed_params:
+                        alg_fixed_params[alg_dataset_name] = {}
+                    alg_fixed_params[alg_dataset_name][parameter_name] = param_value
+                else:
+                    if alg_dataset_name not in alg_varying_params:
+                        alg_varying_params[alg_dataset_name] = {}
+                    alg_varying_params[alg_dataset_name][parameter_name] = param_value
+            else:
+                for alg_name in self.algorithm_names:
+                    try:
+                        _ = iter(param_value)
+                    except TypeError:
+                        if alg_name not in alg_fixed_params:
+                            alg_fixed_params[alg_name] = {}
+                        alg_fixed_params[alg_name][parameter_name] = param_value
+                    else:
+                        if alg_name not in alg_varying_params:
+                            alg_varying_params[alg_name] = {}
+                        alg_varying_params[alg_name][parameter_name] = param_value
+
+        # Check that all the parameters make sense
         for alg in self.algorithms:
             alg_name = alg.name
 
@@ -116,13 +151,30 @@ class ExperimentalSuite(object):
                 alg_varying_params[alg_name] = {}
 
             # Check that the parameters exist for the algorithm
+            params_to_remove = []
             for param in alg_fixed_params[alg_name]:
                 if param not in alg.parameter_names:
-                    raise ValueError(f"Parameter {param} not configured for {alg_name} algorithm.")
+                    params_to_remove.append(param)
+            for param in params_to_remove:
+                del alg_fixed_params[alg_name][param]
+            params_to_remove = []
+            for param in alg_varying_params[alg_name]:
+                if param not in alg.parameter_names:
+                    params_to_remove.append(param)
+            for param in params_to_remove:
+                del alg_varying_params[alg_name][param]
 
             # Convert the parameter iterables to lists
             for param_name in alg_varying_params[alg_name].keys():
                 alg_varying_params[alg_name][param_name] = list(alg_varying_params[alg_name][param_name])
+
+        # Check that all configured parameters match some algorithm
+        for alg in alg_fixed_params.keys():
+            if alg not in self.algorithm_names:
+                raise ValueError(f"Parameters configured for algorithm {alg} which does not exist.")
+        for alg in alg_varying_params.keys():
+            if alg not in self.algorithm_names:
+                raise ValueError(f"Parameters configured for algorithm {alg} which does not exist.")
 
         #  Convert parameter iterables to lists
         for param_name in dataset_varying_params.keys():

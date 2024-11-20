@@ -22,6 +22,9 @@ class Algorithm(object):
         self.implementation = implementation
         self.name = name if name is not None else implementation.__name__
 
+        if self.name is "dataset":
+            raise ValueError("It is not permitted to call an algorithm 'dataset'.")
+
         sig = inspect.signature(self.implementation)
 
         # Check for a return type hint
