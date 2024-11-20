@@ -10,7 +10,7 @@ class Algorithm(object):
     def __init__(self,
                  implementation: Callable,
                  name: str = None,
-                 return_type: Type = None,
+                 return_type: Type = object,
                  parameter_names: List[str] = None,
                  dataset_class: Type[alglab.dataset.Dataset] = alglab.dataset.NoDataset):
         """Create an algorithm definition. The implementation should be a python method which takes
@@ -21,6 +21,11 @@ class Algorithm(object):
         self.implementation = implementation
         self.parameter_names = parameter_names if parameter_names is not None else []
         self.return_type = return_type
+
+        # Check for a return type hint
+        if self.return_type is object and 'return' in implementation.__annotations__:
+            self.return_type = implementation.__annotations__['return']
+
         self.dataset_class = dataset_class
         self.name = name if name is not None else implementation.__name__
 

@@ -45,6 +45,37 @@ def test_bad_return_type():
         _ = kmeans_algorithm.run(test_data, {'k': 8})
 
 
+def test_no_return_type():
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
+                                                  dataset_class=alglab.dataset.PointCloudDataset,
+                                                  parameter_names=['k'])
+    test_data = alglab.dataset.TwoMoonsDataset()
+    _ = kmeans_algorithm.run(test_data, {'k': 8})
+
+
+def test_bad_specified_return_type():
+    # Create an implementation with the wrong return type hint
+    def bad_return(n=10) -> np.ndarray:
+        return n ** 3
+
+    alg = alglab.algorithm.Algorithm(bad_return,
+                                     dataset_class=alglab.dataset.NoDataset,
+                                     parameter_names=['n'])
+
+    with pytest.raises(TypeError, match='return'):
+        _ = alg.run(alglab.dataset.NoDataset(), {'n': 20})
+
+
+def test_good_specified_return_type():
+    def good_return(n=10) -> int:
+        return n ** 3
+
+    alg = alglab.algorithm.Algorithm(good_return,
+                                     dataset_class=alglab.dataset.NoDataset,
+                                     parameter_names=['n'])
+    _ = alg.run(alglab.dataset.NoDataset(), {'n': 20})
+
+
 def test_bad_parameter_names():
     # Specify the wrong parameter names
     kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
