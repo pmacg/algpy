@@ -76,6 +76,46 @@ def test_good_specified_return_type():
     _ = alg.run(alglab.dataset.NoDataset(), {'n': 20})
 
 
+def test_automatically_infer_parameters():
+    def good_return(n=10) -> int:
+        return n ** 3
+
+    alg = alglab.algorithm.Algorithm(good_return,
+                                     dataset_class=alglab.dataset.NoDataset)
+    _ = alg.run(alglab.dataset.NoDataset(), {'n': 20})
+
+
+def test_infer_parameters_with_dataset():
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
+                                                  dataset_class=alglab.dataset.PointCloudDataset)
+
+    test_data = alglab.dataset.TwoMoonsDataset()
+    _ = kmeans_algorithm.run(test_data, {'k': 8})
+
+    with pytest.raises(ValueError, match='parameter'):
+        _ = kmeans_algorithm.run(test_data, {'data': test_data})
+
+
+def test_all_params_default():
+    def non_defaults(k, l, n=10) -> int:
+        return k * l * n ** 3
+
+    with pytest.raises(ValueError, match='default'):
+        alg = alglab.algorithm.Algorithm(non_defaults,
+                                         dataset_class=alglab.dataset.NoDataset)
+
+
+def test_automatically_infer_parameters_bad():
+    def good_return(n=10) -> int:
+        return n ** 3
+
+    alg = alglab.algorithm.Algorithm(good_return,
+                                     dataset_class=alglab.dataset.NoDataset)
+
+    with pytest.raises(ValueError, match='parameter'):
+        _ = alg.run(alglab.dataset.NoDataset(), {'b': 20})
+
+
 def test_bad_parameter_names():
     # Specify the wrong parameter names
     kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,

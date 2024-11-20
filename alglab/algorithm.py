@@ -2,6 +2,7 @@
 Create a generic class representing an algorithm which can be applied to a dataset.
 """
 from typing import List, Type, Callable, Dict, Any
+import inspect
 import alglab.dataset
 
 
@@ -19,12 +20,27 @@ class Algorithm(object):
         return_type.
         """
         self.implementation = implementation
-        self.parameter_names = parameter_names if parameter_names is not None else []
-        self.return_type = return_type
+
+        sig = inspect.signature(self.implementation)
 
         # Check for a return type hint
-        if self.return_type is object and 'return' in implementation.__annotations__:
-            self.return_type = implementation.__annotations__['return']
+        self.return_type = return_type
+        if self.return_type is object and sig.return_annotation is not inspect._empty:
+            self.return_type = sig.return_annotation
+
+        # Automatically infer the parameter names if they are not provided
+        self.parameter_names = []
+        if parameter_names is None:
+            self.parameter_names = [
+                name for name, param in sig.parameters.items()
+                if param.default != inspect.Parameter.empty
+            ]
+        else:
+            self.parameter_names = parameter_names
+
+        # Check that the parameters of the algorithm have default values
+        if len(self.parameter_names) < len(sig.parameters.items()) - 1:
+            raise ValueError("All algorithm parameters should have a default value.")
 
         self.dataset_class = dataset_class
         self.name = name if name is not None else implementation.__name__
