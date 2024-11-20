@@ -105,6 +105,43 @@ def test_all_params_default():
                                          dataset_class=alglab.dataset.NoDataset)
 
 
+def test_automatically_infer_dataset():
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans)
+
+    test_data = alglab.dataset.TwoMoonsDataset()
+    _ = kmeans_algorithm.run(test_data, {'k': 8})
+
+
+def test_pass_wrong_dataset_type():
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans)
+
+    test_data = alglab.dataset.GraphDataset()
+    with pytest.raises(TypeError, match='dataset'):
+        _ = kmeans_algorithm.run(test_data, {'k': 8})
+
+
+def test_no_dataset_type_hint():
+    def kmeans_nohint(data, k=10):
+        sklearn_km = KMeans(n_clusters=k)
+        sklearn_km.fit(data.data)
+        return sklearn_km.labels_
+
+    alg = alglab.algorithm.Algorithm(kmeans_nohint)
+    test_data = alglab.dataset.TwoMoonsDataset()
+    _ = alg.run(test_data, {'k': 8})
+
+
+def test_all_type_hints():
+    def kmeans_hints(data: alglab.dataset.PointCloudDataset, k: int = 10):
+        sklearn_km = KMeans(n_clusters=k)
+        sklearn_km.fit(data.data)
+        return sklearn_km.labels_
+
+    alg = alglab.algorithm.Algorithm(kmeans_hints)
+    test_data = alglab.dataset.TwoMoonsDataset()
+    _ = alg.run(test_data, {'k': 8})
+
+
 def test_automatically_infer_parameters_bad():
     def good_return(n=10) -> int:
         return n ** 3
