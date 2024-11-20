@@ -10,7 +10,7 @@ from typing import List
 
 
 # We will use this KMeans implementation throughout the tests.
-def kmeans_impl(data: alglab.dataset.PointCloudDataset, k=10):
+def kmeans(data: alglab.dataset.PointCloudDataset, k=10):
     sklearn_km = KMeans(n_clusters=k)
     sklearn_km.fit(data.data)
     return sklearn_km.labels_
@@ -22,11 +22,11 @@ def no_dataset_impl(n=10):
 
 def test_algorithm():
     # Test the algorithm class as it is intended to be used.
-    kmeans_algorithm = alglab.algorithm.Algorithm('kmeans',
-                                                 kmeans_impl,
-                                                 return_type=np.ndarray,
-                                                 dataset_class=alglab.dataset.PointCloudDataset,
-                                                 parameter_names=['k'])
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
+                                                  name='kmeans',
+                                                  return_type=np.ndarray,
+                                                  dataset_class=alglab.dataset.PointCloudDataset,
+                                                  parameter_names=['k'])
 
     test_data = alglab.dataset.TwoMoonsDataset()
     _ = kmeans_algorithm.run(test_data, {'k': 8})
@@ -34,11 +34,10 @@ def test_algorithm():
 
 def test_bad_return_type():
     # Specify the wrong return type
-    kmeans_algorithm = alglab.algorithm.Algorithm('kmeans',
-                                                 kmeans_impl,
-                                                 return_type=List,
-                                                 dataset_class=alglab.dataset.PointCloudDataset,
-                                                 parameter_names=['k'])
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
+                                                  return_type=List,
+                                                  dataset_class=alglab.dataset.PointCloudDataset,
+                                                  parameter_names=['k'])
 
     test_data = alglab.dataset.TwoMoonsDataset()
 
@@ -48,11 +47,10 @@ def test_bad_return_type():
 
 def test_bad_parameter_names():
     # Specify the wrong parameter names
-    kmeans_algorithm = alglab.algorithm.Algorithm('kmeans',
-                                                 kmeans_impl,
-                                                 return_type=np.ndarray,
-                                                 dataset_class=alglab.dataset.PointCloudDataset,
-                                                 parameter_names=['m'])
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
+                                                  return_type=np.ndarray,
+                                                  dataset_class=alglab.dataset.PointCloudDataset,
+                                                  parameter_names=['m'])
 
     test_data = alglab.dataset.TwoMoonsDataset()
 
@@ -62,11 +60,10 @@ def test_bad_parameter_names():
 
 def test_unspecified_parameter():
     # Test the algorithm class as it is intended to be used.
-    kmeans_algorithm = alglab.algorithm.Algorithm('kmeans',
-                                                 kmeans_impl,
-                                                 return_type=np.ndarray,
-                                                 dataset_class=alglab.dataset.PointCloudDataset,
-                                                 parameter_names=['k'])
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
+                                                  return_type=np.ndarray,
+                                                  dataset_class=alglab.dataset.PointCloudDataset,
+                                                  parameter_names=['k'])
 
     # Not fully specifying the parameter is permitted when running.
     test_data = alglab.dataset.TwoMoonsDataset()
@@ -74,19 +71,19 @@ def test_unspecified_parameter():
 
 
 def test_no_dataset():
-    cube_algorithm = alglab.algorithm.Algorithm('power',
-                                               no_dataset_impl,
-                                               return_type=int,
-                                               parameter_names=['n'])
+    cube_algorithm = alglab.algorithm.Algorithm(no_dataset_impl,
+                                                name="power",
+                                                return_type=int,
+                                                parameter_names=['n'])
 
     _ = cube_algorithm.run(alglab.dataset.NoDataset(), {'n': 20})
 
 
 def test_wrong_dataset():
-    cube_algorithm = alglab.algorithm.Algorithm('power',
-                                               no_dataset_impl,
-                                               return_type=int,
-                                               parameter_names=['n'])
+    cube_algorithm = alglab.algorithm.Algorithm(no_dataset_impl,
+                                                name="power",
+                                                return_type=int,
+                                                parameter_names=['n'])
 
     with pytest.raises(TypeError, match='dataset'):
         _ = cube_algorithm.run(alglab.dataset.TwoMoonsDataset(), {'n': 20})
@@ -94,8 +91,7 @@ def test_wrong_dataset():
 
 def test_openml_dataset():
     dataset = alglab.dataset.OpenMLDataset(name="iris")
-    kmeans_algorithm = alglab.algorithm.Algorithm('kmeans',
-                                                  kmeans_impl,
+    kmeans_algorithm = alglab.algorithm.Algorithm(kmeans,
                                                   return_type=np.ndarray,
                                                   dataset_class=alglab.dataset.PointCloudDataset,
                                                   parameter_names=['k'])

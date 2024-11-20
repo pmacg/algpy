@@ -1,15 +1,15 @@
 """
 Create a generic class representing an algorithm which can be applied to a dataset.
 """
-from typing import List, Type, Callable, Dict
+from typing import List, Type, Callable, Dict, Any
 import alglab.dataset
 
 
 class Algorithm(object):
 
     def __init__(self,
-                 name: str,
                  implementation: Callable,
+                 name: str = None,
                  return_type: Type = None,
                  parameter_names: List[str] = None,
                  dataset_class: Type[alglab.dataset.Dataset] = alglab.dataset.NoDataset):
@@ -22,7 +22,7 @@ class Algorithm(object):
         self.parameter_names = parameter_names if parameter_names is not None else []
         self.return_type = return_type
         self.dataset_class = dataset_class
-        self.name = name
+        self.name = name if name is not None else implementation.__name__
 
     def run(self, dataset: alglab.dataset.Dataset, params: Dict):
         if not isinstance(dataset, self.dataset_class):
