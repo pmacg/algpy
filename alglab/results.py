@@ -70,6 +70,7 @@ class Results(object):
         plt.legend()
         if filename:
             plt.savefig(filename, format="pdf", bbox_inches="tight")
+        plt.tight_layout()
         plt.show()
 
     def bar_plot(self, x_col, y_col, x_vals, filename=None,
@@ -106,5 +107,6 @@ class Results(object):
         plt.legend()
         if filename:
             plt.savefig(filename, format="pdf", bbox_inches="tight")
+        plt.tight_layout()
         plt.show()
 
