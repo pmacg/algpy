@@ -77,7 +77,7 @@ class ExperimentalSuite(object):
                  results_filename: str,
                  num_runs: int = 1,
                  parameters: Dict = None,
-                 evaluators: List[alglab.evaluation.Evaluator] = None):
+                 evaluators: List[Union[alglab.evaluation.Evaluator, Callable]] = None):
         """Run a suite of experiments while varying some parameters.
 
         Varying parameter dictionaries should have parameter names as keys and the values should be an iterable containing:
@@ -188,7 +188,8 @@ class ExperimentalSuite(object):
         self.dataset_class = dataset
         self.dataset_fixed_params = dataset_fixed_params
         self.dataset_varying_params = dataset_varying_params
-        self.evaluators = evaluators if evaluators is not None else []
+        self.evaluators = [e if isinstance(e, alglab.evaluation.Evaluator) else alglab.evaluation.Evaluator(e)
+                           for e in evaluators] if evaluators is not None else []
         self.results_filename = results_filename
 
         self.results_columns = self.get_results_df_columns()

@@ -104,6 +104,16 @@ def test_simple_configuration():
     experiments.run_all()
 
 
+def test_simple_with_custom_evaluator():
+    def const_evaluator(data, alg_output):
+        return 5
+
+    experiments = alglab.experiment.ExperimentalSuite([kmeans, sc],
+                                                      alglab.dataset.TwoMoonsDataset,
+                                                      "results/twomoonsresults.csv",
+                                                      evaluators=[const_evaluator])
+
+
 def test_wrong_alg_name():
     algs = [alglab.algorithm.Algorithm(kmeans),
             alglab.algorithm.Algorithm(sc)]

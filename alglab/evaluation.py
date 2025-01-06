@@ -1,29 +1,68 @@
 """
 Methods for evaluating the performance of an algorithm.
 """
-from typing import Callable, Type
+from typing import Callable, Type, get_type_hints
 import numpy as np
-import alglab.algorithm
-import alglab.dataset
+import alglab
 import stag.cluster
 import stag.graph
 import scipy.sparse.linalg
+import inspect
 
 
 class Evaluator(object):
 
     def __init__(self,
-                 name: str,
                  implementation: Callable,
+                 name: str = None,
                  alg_result_type: Type = None,
-                 dataset_class: Type[alglab.dataset.Dataset] = alglab.dataset.NoDataset):
+                 dataset_class: Type[alglab.dataset.Dataset] = None):
         """Define a method of evaluating an algorithm. Specify the evaluator implementation as
         well as the expected result type of the algorithm to be evaluated and the type of the dataset
         the algorithm should be applied to."""
         self.implementation = implementation
-        self.alg_result_type = alg_result_type
+        sig = inspect.signature(self.implementation)
+
+        self.name = name if name is not None else implementation.__name__
+
+        # Automatically infer the dataset class from type annotations
+        parameter_names = [
+            name for name, param in sig.parameters.items()
+        ]
+
+        if len(parameter_names) < 1:
+            raise ValueError("Evaluator implementation must take at least one parameter.")
+        if len(parameter_names) > 2:
+            raise ValueError("Evaluator implementation must take at most two parameters: (optionally) a dataset, "
+                             "and the algorithm's output.")
+
         self.dataset_class = dataset_class
-        self.name = name
+        if self.dataset_class is None:
+            # If there is only one positional argument to the implementation, then there is no dataset.
+            if len(parameter_names) == 1:
+                self.dataset_class = alglab.dataset.NoDataset
+            else:
+                # Get the name of the dataset parameter
+                dataset_parameter = parameter_names[0]
+
+                # Extract the type hint for the dataset parameter, if one exists
+                type_hints = get_type_hints(implementation)
+                if dataset_parameter in type_hints:
+                    self.dataset_class = type_hints[dataset_parameter]
+                else:
+                    self.dataset_class = alglab.dataset.Dataset
+
+        self.alg_result_type = alg_result_type
+        if self.alg_result_type is None:
+            # Get the name of the result parameter
+            result_parameter = parameter_names[-1]
+
+            # Extract the type hint for the result parameter, if it exists
+            type_hints = get_type_hints(implementation)
+            if result_parameter in type_hints:
+                self.alg_result_type = type_hints[result_parameter]
+            else:
+                self.alg_result_type = object
 
     def apply(self, dataset: alglab.dataset.Dataset, alg_result):
         if not isinstance(dataset, self.dataset_class):
@@ -54,8 +93,8 @@ def __ari_impl(data: alglab.dataset.ClusterableDataset, labels):
         raise ValueError('No ground truth labels provided.')
 
 
-adjusted_rand_index = Evaluator('adjusted_rand_index',
-                                __ari_impl,
+adjusted_rand_index = Evaluator(__ari_impl,
+                                name="adjusted_rand_index",
                                 alg_result_type=np.ndarray,
                                 dataset_class=alglab.dataset.ClusterableDataset)
 
@@ -68,8 +107,8 @@ def __num_vertices_impl(_: alglab.dataset.Dataset, graph: stag.graph.Graph):
     return graph.number_of_vertices()
 
 
-num_vertices = Evaluator('number_of_vertices',
-                         __num_vertices_impl,
+num_vertices = Evaluator(__num_vertices_impl,
+                         name="number_of_vertices",
                          alg_result_type=stag.graph.Graph,
                          dataset_class=alglab.dataset.Dataset)
 
@@ -78,8 +117,8 @@ def __avg_degree_impl(_: alglab.dataset.Dataset, graph: stag.graph.Graph):
     return graph.average_degree()
 
 
-avg_degree = Evaluator('average_degree',
-                       __avg_degree_impl,
+avg_degree = Evaluator(__avg_degree_impl,
+                       name="average_degree",
                        alg_result_type=stag.graph.Graph,
                        dataset_class=alglab.dataset.Dataset)
 
@@ -90,7 +129,7 @@ def __normalised_laplacian_second_eigenvalue_impl(_: alglab.dataset.Dataset, gra
     return eigs[1]
 
 
-normalised_laplacian_second_eigenvalue = Evaluator('lap_second_eigenvalue',
-                                                   __normalised_laplacian_second_eigenvalue_impl,
+normalised_laplacian_second_eigenvalue = Evaluator(__normalised_laplacian_second_eigenvalue_impl,
+                                                   name="lap_second_eigenvalue",
                                                    alg_result_type=stag.graph.Graph,
                                                    dataset_class=alglab.dataset.Dataset)

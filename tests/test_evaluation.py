@@ -2,10 +2,10 @@
 import pytest
 import stag.graph
 import stag.random
+import stag.cluster
 from sklearn.cluster import KMeans
 import numpy as np
-import alglab.dataset
-import alglab.evaluation
+import alglab
 
 
 # We will use this KMeans implementation throughout the tests.
@@ -76,3 +76,20 @@ def test_eigenvalue():
     eig = alglab.evaluation.normalised_laplacian_second_eigenvalue.apply(alglab.dataset.NoDataset(),
                                                                         graph)
     assert 0.2 > eig > 0
+
+
+def ari(data: alglab.dataset.ClusterableDataset, labels) -> float:
+    if data.gt_labels is not None:
+        return stag.cluster.adjusted_rand_index(data.gt_labels, labels)
+    else:
+        raise ValueError('No ground truth labels provided.')
+
+
+def test_create_evaluator():
+    evaluator = alglab.evaluation.Evaluator(ari)
+
+    # Create a dataset with ground truth
+    data = alglab.dataset.TwoMoonsDataset()
+
+    best_ari = evaluator.apply(data, data.gt_labels)
+    assert best_ari == 1
