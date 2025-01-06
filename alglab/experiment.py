@@ -1,8 +1,7 @@
 """Classes and methods related to running experiments on algorithms and datasets."""
 import time
 
-from typing import Dict, Type, List, Callable, Iterable
-import pandas as pd
+from typing import Dict, Type, List, Callable, Union
 import itertools
 from collections import OrderedDict
 
@@ -73,7 +72,7 @@ class Experiment(object):
 class ExperimentalSuite(object):
 
     def __init__(self,
-                 algorithms: List[alglab.algorithm.Algorithm],
+                 algorithms: List[Union[alglab.algorithm.Algorithm, Callable]],
                  dataset: Type[alglab.dataset.Dataset],
                  results_filename: str,
                  num_runs: int = 1,
@@ -90,7 +89,8 @@ class ExperimentalSuite(object):
         if num_runs < 1:
             raise ValueError('num_runs must be greater than or equal to 1')
 
-        self.algorithms = algorithms
+        self.algorithms = [a if isinstance(a, alglab.algorithm.Algorithm) else alglab.algorithm.Algorithm(a)
+                           for a in algorithms]
         self.algorithm_names = [alg.name for alg in self.algorithms]
 
         # Automatically populate the parameter dictionaries
@@ -98,6 +98,9 @@ class ExperimentalSuite(object):
         alg_varying_params = {}
         dataset_fixed_params = {}
         dataset_varying_params = {}
+
+        if parameters is None:
+            parameters = {}
 
         for param_name, param_value in parameters.items():
             alg_dataset_name = ""
@@ -185,7 +188,7 @@ class ExperimentalSuite(object):
         self.dataset_class = dataset
         self.dataset_fixed_params = dataset_fixed_params
         self.dataset_varying_params = dataset_varying_params
-        self.evaluators = evaluators
+        self.evaluators = evaluators if evaluators is not None else []
         self.results_filename = results_filename
 
         self.results_columns = self.get_results_df_columns()

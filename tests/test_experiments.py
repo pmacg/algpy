@@ -97,6 +97,13 @@ def test_dynamic_params():
     experiments.run_all()
 
 
+def test_simple_configuration():
+    experiments = alglab.experiment.ExperimentalSuite([kmeans, sc],
+                                                      alglab.dataset.TwoMoonsDataset,
+                                                      "results/twomoonsresults.csv")
+    experiments.run_all()
+
+
 def test_wrong_alg_name():
     algs = [alglab.algorithm.Algorithm(kmeans),
             alglab.algorithm.Algorithm(sc)]
