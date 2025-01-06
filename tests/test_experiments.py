@@ -112,6 +112,7 @@ def test_simple_with_custom_evaluator():
                                                       alglab.dataset.TwoMoonsDataset,
                                                       "results/twomoonsresults.csv",
                                                       evaluators=[const_evaluator])
+    experiments.run_all()
 
 
 def test_wrong_alg_name():
