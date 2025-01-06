@@ -204,7 +204,7 @@ def test_openml_dataset():
                                                   dataset_class=alglab.dataset.PointCloudDataset,
                                                   parameter_names=['k'])
 
-    labels = kmeans_algorithm.run(dataset, {'k': 3})
+    labels, _ = kmeans_algorithm.run(dataset, {'k': 3})
 
     # Check that evaluation works
     _ = alglab.evaluation.adjusted_rand_index.apply(dataset, labels)

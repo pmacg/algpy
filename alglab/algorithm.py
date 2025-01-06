@@ -1,9 +1,10 @@
 """
 Create a generic class representing an algorithm which can be applied to a dataset.
 """
-from typing import List, Type, Callable, Dict, Any, get_type_hints
+from typing import List, Type, Callable, Dict, get_type_hints
 import inspect
 import alglab.dataset
+import time
 
 
 class Algorithm(object):
@@ -72,15 +73,18 @@ class Algorithm(object):
             if param not in self.parameter_names:
                 raise ValueError("Unexpected parameter name.")
 
+        start_time = time.time()
         if self.dataset_class is not alglab.dataset.NoDataset:
             result = self.implementation(dataset, **params)
         else:
             result = self.implementation(**params)
+        end_time = time.time()
+        running_times = {'running_time_s': end_time - start_time}
 
         if not isinstance(result, self.return_type):
             raise TypeError("Provided result type must match promised return_type.")
 
-        return result
+        return result, running_times
 
     def __repr__(self):
         return self.name

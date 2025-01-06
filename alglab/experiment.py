@@ -58,10 +58,8 @@ class Experiment(object):
     def run(self):
         """Run the experiment."""
         # We always measure the running time of the experiment.
-        start_time = time.time()
-        alg_output = self.alg.run(self.dataset, self.params)
-        end_time = time.time()
-        self.result['running_time_s'] = end_time - start_time
+        alg_output, running_times = self.alg.run(self.dataset, self.params)
+        self.result = running_times
 
         # Apply the evaluation functions
         if self.evaluators:
