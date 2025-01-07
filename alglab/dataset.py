@@ -81,15 +81,20 @@ class PointCloudDataset(ClusterableDataset):
         self.n, self.d = data.shape
         ClusterableDataset.__init__(self, labels)
 
-    def plot_clusters(self, labels):
+    def plot_clusters(self, labels, dimension_idxs=None):
         """
         If the data is two-dimensional, plot the data, colored according to the labels.
+
+        If dimension_idxs is an array of length two, plot the data using the given dimension indices.
         """
-        if self.d != 2:
-            raise ValueError("Dataset is not two-dimensional.")
+        if (self.d != 2 and dimension_idxs is None) or (dimension_idxs is not None and len(dimension_idxs) != 2):
+            raise ValueError("Cannot plot dataset: it has more than two dimensions.")
 
         if len(labels) != self.n:
-            raise ValueError("Labels length must match number of data points.")
+            raise ValueError("Cannot plot dataset: labels length must match number of data points.")
+
+        if dimension_idxs is None:
+            dimension_idxs = [0, 1]
 
         labels = np.array(labels)
 
@@ -99,17 +104,19 @@ class PointCloudDataset(ClusterableDataset):
 
         for label in unique_labels:
             cluster_data = self.data[labels == label]
-            plt.scatter(cluster_data[:, 0], cluster_data[:, 1], label=f'Cluster {label}')
+            plt.scatter(cluster_data[:, dimension_idxs[0]], cluster_data[:, dimension_idxs[1]], label=f'Cluster {label}')
 
         plt.grid(True)
         plt.show()
 
-    def plot_data(self):
+    def plot_data(self, dimension_idxs=None):
         """
         If the data is two-dimensional, plot it.
+
+        If dimension_idxs is an array of length two, plot the data using the given dimension indices.
         """
         labels = np.ones(self.n)
-        self.plot_clusters(labels)
+        self.plot_clusters(labels, dimension_idxs=dimension_idxs)
 
 
 class TwoMoonsDataset(PointCloudDataset):

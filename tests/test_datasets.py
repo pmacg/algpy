@@ -47,7 +47,7 @@ def test_pointcloud_dataset_plot(monkeypatch):
     dataset.plot_clusters(gt_labels)
 
     # Plotting a 3 dimensional dataset does not work
-    with pytest.raises(Exception, match="two-dimensional"):
+    with pytest.raises(Exception, match="two dimensions"):
         data = np.asarray([[1, 1, 1], [2, 3, 3]])
         gt_labels = [0, 1]
         dataset = alglab.dataset.PointCloudDataset(data=data, labels=gt_labels)
@@ -95,3 +95,8 @@ def test_openml_dataset():
 def test_plot_dataset():
     dataset = alglab.dataset.TwoMoonsDataset()
     dataset.plot_data()
+
+
+def test_plot_dimensions():
+    dataset = alglab.dataset.OpenMLDataset(name="iris")
+    dataset.plot_data(dimension_idxs=[1, 2])
