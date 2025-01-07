@@ -104,6 +104,13 @@ class PointCloudDataset(ClusterableDataset):
         plt.grid(True)
         plt.show()
 
+    def plot_data(self):
+        """
+        If the data is two-dimensional, plot it.
+        """
+        labels = np.ones(self.n)
+        self.plot_clusters(labels)
+
 
 class TwoMoonsDataset(PointCloudDataset):
     """The toy two moons dataset from sklearn."""

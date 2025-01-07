@@ -90,3 +90,8 @@ def test_openml_dataset():
     assert dataset.n == 150
     assert dataset.d == 4
     assert isinstance(dataset.gt_labels, np.ndarray)
+
+
+def test_plot_dataset():
+    dataset = alglab.dataset.TwoMoonsDataset()
+    dataset.plot_data()
