@@ -20,14 +20,8 @@ def sc(data: alglab.dataset.PointCloudDataset, k=10):
 
 def test_experimental_suite():
     # Test the experimental suite class as it's intended to be used.
-    alg1 = alglab.algorithm.Algorithm(kmeans,
-                                      return_type=np.ndarray,
-                                      parameter_names=["k"],
-                                      dataset_class=alglab.dataset.PointCloudDataset)
-    alg2 = alglab.algorithm.Algorithm(sc,
-                                      return_type=np.ndarray,
-                                      parameter_names=["k"],
-                                      dataset_class=alglab.dataset.PointCloudDataset)
+    alg1 = alglab.algorithm.Algorithm(kmeans)
+    alg2 = alglab.algorithm.Algorithm(sc)
 
     experiments = alglab.experiment.ExperimentalSuite(
         [alg1, alg2],
@@ -46,14 +40,8 @@ def test_experimental_suite():
 
 def test_multiple_runs():
     # Test the experimental suite class as it's intended to be used.
-    alg1 = alglab.algorithm.Algorithm(kmeans,
-                                      return_type=np.ndarray,
-                                      parameter_names=["k"],
-                                      dataset_class=alglab.dataset.PointCloudDataset)
-    alg2 = alglab.algorithm.Algorithm(sc,
-                                      return_type=np.ndarray,
-                                      parameter_names=["k"],
-                                      dataset_class=alglab.dataset.PointCloudDataset)
+    alg1 = alglab.algorithm.Algorithm(kmeans)
+    alg2 = alglab.algorithm.Algorithm(sc)
 
     experiments = alglab.experiment.ExperimentalSuite(
         [alg1, alg2],
@@ -73,14 +61,8 @@ def test_multiple_runs():
 
 
 def test_dynamic_params():
-    alg1 = alglab.algorithm.Algorithm(kmeans,
-                                      return_type=np.ndarray,
-                                      parameter_names=["k"],
-                                      dataset_class=alglab.dataset.PointCloudDataset)
-    alg2 = alglab.algorithm.Algorithm(sc,
-                                      return_type=np.ndarray,
-                                      parameter_names=["k"],
-                                      dataset_class=alglab.dataset.PointCloudDataset)
+    alg1 = alglab.algorithm.Algorithm(kmeans)
+    alg2 = alglab.algorithm.Algorithm(sc)
 
     experiments = alglab.experiment.ExperimentalSuite(
         [alg1, alg2],

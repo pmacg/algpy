@@ -116,7 +116,7 @@ class ExperimentalSuite(object):
                     dataset_varying_params[parameter_name] = param_value
             elif alg_dataset_name != "":
                 for algorithm in self.algorithms:
-                    if algorithm.name == alg_dataset_name and parameter_name not in algorithm.parameter_names:
+                    if algorithm.name == alg_dataset_name and parameter_name not in algorithm.all_parameter_names:
                         raise ValueError(f"Algorithm {alg_dataset_name} does not accept parameter {parameter_name}.")
                 try:
                     _ = iter(param_value)
@@ -154,13 +154,13 @@ class ExperimentalSuite(object):
             # Check that the parameters exist for the algorithm
             params_to_remove = []
             for param in alg_fixed_params[alg_name]:
-                if param not in alg.parameter_names:
+                if param not in alg.all_parameter_names:
                     params_to_remove.append(param)
             for param in params_to_remove:
                 del alg_fixed_params[alg_name][param]
             params_to_remove = []
             for param in alg_varying_params[alg_name]:
-                if param not in alg.parameter_names:
+                if param not in alg.all_parameter_names:
                     params_to_remove.append(param)
             for param in params_to_remove:
                 del alg_varying_params[alg_name][param]
