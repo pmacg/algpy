@@ -218,7 +218,9 @@ class ExperimentalSuite(object):
                 columns.append(param_name)
             for param_name in self.alg_varying_params[alg_name].keys():
                 columns.append(param_name)
-        columns.append('running_time_s')
+        for alg in self.algorithms:
+            for time_heading in alg.time_headings:
+                columns.append(time_heading)
         for evaluator in self.evaluators:
             columns.append(evaluator.name)
         return list(OrderedDict.fromkeys(columns))

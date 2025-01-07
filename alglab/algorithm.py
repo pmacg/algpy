@@ -140,6 +140,9 @@ class Algorithm(object):
         # Check that the number of non-defaulted parameters in each step of the implementation is correct.
         self.__check_number_of_parameters()
 
+        self.time_headings = [f'{step.name}_running_time_s' for step in self.implementation]
+        self.time_headings.append('running_time_s')
+
     def __get_parameters(self):
         inferred_parameter_names = []
         for step in self.implementation:

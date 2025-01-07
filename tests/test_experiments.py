@@ -113,3 +113,35 @@ def test_wrong_alg_name():
             },
             evaluators=[alglab.evaluation.adjusted_rand_index]
         )
+
+
+def test_multi_step_algs():
+    def kmeans_init(data: alglab.dataset.PointCloudDataset, k=10):
+        return KMeans(n_clusters=k)
+
+    def kmeans_predict(kmeans_obj, data: alglab.dataset.PointCloudDataset) -> np.ndarray:
+        kmeans_obj.fit(data.data)
+        return kmeans_obj.labels_
+
+    def kmeans_slow_predict(kmeans_obj, data: alglab.dataset.PointCloudDataset) -> np.ndarray:
+        kmeans_obj.fit(data.data)
+        kmeans_obj.fit(data.data)
+        return kmeans_obj.labels_
+
+    alg1 = alglab.algorithm.Algorithm([('fit', kmeans_init), ('predict', kmeans_predict)], name='kmeans')
+    alg2 = alglab.algorithm.Algorithm([('fit', kmeans_init), ('predict', kmeans_slow_predict)], name='slow_kmeans')
+
+    experiments = alglab.experiment.ExperimentalSuite(
+        [alg1, alg2],
+        alglab.dataset.TwoMoonsDataset,
+        "results/twomoonsresults.csv",
+        parameters={
+            "k": 2,
+            "dataset.n": np.linspace(100, 1000, 6),
+        },
+    )
+
+    results = experiments.run_all()
+    results.line_plot("n", "fit_running_time_s")
+    results.line_plot("n", "predict_running_time_s")
+    results.line_plot("n", "running_time_s")
