@@ -21,10 +21,13 @@ class Results(object):
         alg_dfs = {alg_name: self.results_df.loc[self.results_df['algorithm'] == alg_name] for alg_name in
                   self.algorithm_names}
         stats_df = pd.DataFrame()
+        to_group_by = ['experiment_id']
+        if 'iter' in self.results_df.columns:
+            to_group_by.append('iter')
         for alg_name, alg_df in alg_dfs.items():
-            mean_df = alg_df.groupby(['experiment_id']).mean(numeric_only=True)
+            mean_df = alg_df.groupby(to_group_by).mean(numeric_only=True)
             mean_df = mean_df.drop(['trial_id', 'run_id'], axis=1).add_prefix('_mean_')
-            sem_df = alg_df.groupby(['experiment_id']).sem(numeric_only=True)
+            sem_df = alg_df.groupby(to_group_by).sem(numeric_only=True)
             sem_df = sem_df.drop(['trial_id', 'run_id'], axis=1).add_prefix('_sem_')
             sem_df['algorithm'] = alg_name
             sem_df = sem_df.join(mean_df)
@@ -36,13 +39,22 @@ class Results(object):
 
     def line_plot(self, x_col, y_col, filename=None,
                   ignore_algorithms=None,
-                  fixed_parameters=None):
+                  fixed_parameters=None,
+                  algorithm_names=None,
+                  x_range=None,
+                  y_label=None,
+                  x_label=None,
+                  show_legend=True,):
         """Plot one column of the dataframe against another."""
         if ignore_algorithms is None:
             ignore_algorithms = []
-
         if fixed_parameters is None:
             fixed_parameters = {}
+        if algorithm_names is None:
+            algorithm_names = {}
+
+        if x_col not in ['iter']:
+            x_col = f"_mean_{x_col}"
 
         # Filter all the results by the provided fixed parameters
         results_to_plot = self.stats_df
@@ -56,21 +68,31 @@ class Results(object):
 
         for alg_name in self.algorithm_names:
             if alg_name not in ignore_algorithms:
-                this_alg_results = results_to_plot[(self.stats_df['algorithm'] == alg_name)]
-                plt.plot(this_alg_results[f"_mean_{x_col}"],
+                this_alg_name = algorithm_names[alg_name] if alg_name in algorithm_names else alg_name
+                this_alg_results = results_to_plot[(results_to_plot['algorithm'] == alg_name)]
+                plt.plot(this_alg_results[x_col],
                          this_alg_results[f"_mean_{y_col}"],
                          linewidth=3,
-                         label=alg_name)
+                         label=this_alg_name)
                 if self.num_runs > 1:
-                    plt.fill_between(this_alg_results[f"_mean_{x_col}"],
+                    plt.fill_between(this_alg_results[x_col],
                                      this_alg_results[f"_mean_{y_col}"] - this_alg_results[f"_sem_{y_col}"],
                                      this_alg_results[f"_mean_{y_col}"] + this_alg_results[f"_sem_{y_col}"],
                                      alpha=0.2)
 
-        plt.legend()
+        # Set the limits of the plot if specified
+        if x_range is not None:
+            ax.set_xlim(x_range[0], x_range[1])
+
+        if x_label is not None:
+            ax.set_xlabel(x_label)
+        if y_label is not None:
+            ax.set_ylabel(y_label)
+
+        if show_legend:
+            plt.legend()
         if filename:
             plt.savefig(filename, format="pdf", bbox_inches="tight")
-        plt.tight_layout()
         plt.show()
 
     def bar_plot(self, x_col, y_col, x_vals, filename=None,

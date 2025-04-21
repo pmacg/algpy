@@ -1,12 +1,14 @@
 """Implementation of the Dataset object for use with algpy."""
 from sklearn.datasets import make_moons, fetch_openml
 from sklearn.neighbors import kneighbors_graph
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 from abc import ABC, abstractmethod
 import stag.graph
 import stag.random
 import matplotlib.pyplot as plt
-from typing import Type, Dict
+from typing import Type, Dict, List, Tuple
 import pandas as pd
 
 
@@ -35,6 +37,19 @@ class ClusterableDataset(Dataset):
 
     def __init__(self, labels):
         self.gt_labels = labels
+
+    def cluster_ids(self):
+        if self.gt_labels is None:
+            return None
+        else:
+            return np.unique(self.gt_labels).tolist()
+
+    def get_cluster(self, cluster_id: int):
+        cluster = []
+        for id, lab in enumerate(self.gt_labels):
+            if lab == cluster_id:
+                cluster.append(id)
+        return cluster
 
 
 class GraphDataset(ClusterableDataset):
@@ -79,7 +94,18 @@ class PointCloudDataset(ClusterableDataset):
         """Initialise the dataset with a numpy array. Optionally, provide labels for classification."""
         self.data = np.array(data)
         self.n, self.d = data.shape
+        self.k = -1 if labels is None else len(np.unique(np.asarray(labels)))
         ClusterableDataset.__init__(self, labels)
+
+    def apply_pca(self, new_dimension: int):
+        pca = PCA(n_components=new_dimension)
+        self.data = pca.fit_transform(self.data)
+        assert self.data.shape[1] == new_dimension
+        self.d = new_dimension
+
+    def apply_scaling(self):
+        scaler = StandardScaler().fit(self.data)
+        self.data = scaler.transform(self.data)
 
     def plot_clusters(self, labels, dimension_idxs=None):
         """
@@ -165,3 +191,95 @@ class KnnGraphDataset(GraphDataset, PointCloudDataset):
         adj_non_symmetric = kneighbors_graph(self.data, k)
         g = stag.graph.Graph(adj_non_symmetric + adj_non_symmetric.transpose())
         GraphDataset.__init__(self, graph=g, labels=self.gt_labels)
+
+
+class DynamicDataset(Dataset):
+
+    def __init__(self, num_updates: int):
+        self.num_updates: int = num_updates
+
+    @abstractmethod
+    def set_iteration(self, t):
+        """
+        Configure the dataset to its state after the tth iteration.
+        This is used to help evaluation algorithms work for both dynamic and static datasets.
+        """
+        pass
+
+    @abstractmethod
+    def get_update(self, t):
+        pass
+
+
+class DynamicPointCloudDataset(PointCloudDataset, DynamicDataset):
+
+    def __init__(self, data: np.array, update_schedule: List[Tuple[List[int], List[int]]], labels: np.array = None):
+        # The update schedule is a list of the order in which the data points arrive to the dataset.
+        # Each element in the update schedule is a tuple of insertions and deletions.
+        #
+        # We assume that once a point is deleted, it is never re-inserted. If you'd like to model this, you'll need to
+        # include the point multiple times in the data matrix.
+        self.update_schedule = update_schedule
+
+        # If labels are provided, we compute the ground truth labels for each update to the dataset.
+        self.schedule_labels = None if labels is None else []
+        if labels is not None:
+            current_data = set()
+            for i in range(len(update_schedule)):
+                deletions = self.update_schedule[i][1]
+                additions = self.update_schedule[i][0]
+                current_data.update(additions)
+                current_data.difference_update(set(deletions))
+
+                current_labels = [labels[j] for j in sorted(current_data)]
+                self.schedule_labels.append(current_labels)
+
+        PointCloudDataset.__init__(self, data=data, labels=labels)
+        DynamicDataset.__init__(self, len(update_schedule))
+
+    @classmethod
+    def from_pointcloud(cls, pointcloud_dataset: PointCloudDataset, batch_size: int,
+                        stream_by_cluster=False):
+        """
+        Create a dynamic point cloud dataset using a normal pointcloud dataset and streaming the data in according to
+        batch size.
+        """
+        if stream_by_cluster:
+            # Stream in the data one cluster at a time
+            ordered_indexes = []
+            gt_labels = []
+            for cluster_id in pointcloud_dataset.cluster_ids():
+                for id in pointcloud_dataset.get_cluster(cluster_id):
+                    ordered_indexes.append(id)
+                    gt_labels.append(cluster_id)
+
+            reordered_data = pointcloud_dataset.data[ordered_indexes, :]
+        else:
+            random_order = np.random.permutation(pointcloud_dataset.data.shape[0])
+            reordered_data = pointcloud_dataset.data[random_order, :]
+            gt_labels = pointcloud_dataset.gt_labels[random_order]
+
+        update_schedule = []
+        current_n = 0
+        while current_n < pointcloud_dataset.n:
+            update_schedule.append((list(range(current_n, min(current_n + batch_size, pointcloud_dataset.n))),
+                                    []))
+            current_n += batch_size
+
+        return cls(reordered_data, update_schedule, labels=gt_labels)
+
+    def set_iteration(self, t):
+        self.n = self.get_n(t)
+        self.gt_labels = self.get_labels(t)
+        self.k = -1 if self.gt_labels is None else len(np.unique(np.asarray(self.gt_labels)))
+
+    def get_update(self, t):
+        """Get the additions and deletions corresponding to the tth update."""
+        return self.update_schedule[t]
+
+    def get_labels(self, t):
+        """Get the labels corresponding to the tth update."""
+        return self.schedule_labels[t]
+
+    def get_n(self, t):
+        return len(self.get_labels(t))

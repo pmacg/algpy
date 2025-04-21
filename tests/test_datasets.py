@@ -92,6 +92,17 @@ def test_openml_dataset():
     assert isinstance(dataset.gt_labels, np.ndarray)
 
 
+def test_pca_and_scaling():
+    dataset = alglab.dataset.OpenMLDataset(name="iris")
+    assert dataset.n == 150
+    assert dataset.d == 4
+
+    dataset.apply_pca(2)
+    dataset.apply_scaling()
+    assert dataset.n == 150
+    assert dataset.d == 2
+
+
 def test_plot_dataset():
     dataset = alglab.dataset.TwoMoonsDataset()
     dataset.plot_data()

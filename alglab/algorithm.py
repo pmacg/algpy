@@ -2,6 +2,7 @@
 Create a generic class representing an algorithm which can be applied to a dataset.
 """
 from typing import List, Type, Tuple, Callable, Dict, Union, get_type_hints
+from types import GeneratorType
 import inspect
 import alglab.dataset
 import time
@@ -86,12 +87,7 @@ class AlgorithmStep(object):
         if self.dataset_class is not alglab.dataset.NoDataset:
             non_kw_args.append(dataset)
 
-        start_time = time.time()
-        result = self.implementation(*non_kw_args, **this_step_parameters)
-        end_time = time.time()
-        running_time = end_time - start_time
-
-        return result, running_time
+        return self.implementation(*non_kw_args, **this_step_parameters)
 
 
 class Algorithm(object):
@@ -128,6 +124,8 @@ class Algorithm(object):
         if self.name is "dataset":
             raise ValueError("It is not permitted to call an algorithm 'dataset'.")
 
+        self.number_of_steps = len(self.implementation)
+
         # Check for a return type hint
         self.return_type = self.implementation[-1].return_type
 
@@ -140,8 +138,14 @@ class Algorithm(object):
         # Check that the number of non-defaulted parameters in each step of the implementation is correct.
         self.__check_number_of_parameters()
 
-        self.time_headings = [f'{step.name}_running_time_s' for step in self.implementation]
-        self.time_headings.append('running_time_s')
+        self.results_headings = []
+        if self.number_of_steps > 1:
+            for step in self.implementation:
+                self.results_headings.append(f'{step.name}_running_time_s')
+        else:
+            self.results_headings.append('iter')
+            self.results_headings.append('iter_running_time_s')
+        self.results_headings.append('total_running_time_s')
 
     def __get_parameters(self):
         inferred_parameter_names = []
@@ -157,8 +161,52 @@ class Algorithm(object):
                     (step.dataset_class is not alglab.dataset.NoDataset and self.dataset_class is alglab.dataset.NoDataset)):
                 raise ValueError("All algorithm steps must take the dataset as an argument.")
 
+    def __run_multi_step(self, dataset: alglab.dataset.Dataset, params: Dict):
+        result = None
+        running_times = {}
+        global_start_time = time.time()
+        for step in self.implementation:
+            start_time = time.time()
+            result = step.run(dataset, params, previous_step_output=result)
+            end_time = time.time()
+            running_times[f'{step.name}_running_time_s'] = end_time - start_time
+        end_time = time.time()
+        running_times['total_running_time_s'] = end_time - global_start_time
 
-    def run(self, dataset: alglab.dataset.Dataset, params: Dict):
+        return result, running_times
+
+    def __run_single_step(self, dataset: alglab.dataset.Dataset, params: Dict):
+        start_time = time.time()
+        experiment_gen = self.implementation[0].run(dataset, params)
+        end_time = time.time()
+
+        if not isinstance(experiment_gen, GeneratorType):
+            # This is not a dynamic algorithm - return the result
+            total_running_time = end_time - start_time
+            result = {'iter': 0,
+                      'iter_running_time_s': end_time - start_time,
+                      'total_running_time_s': total_running_time}
+            yield experiment_gen, result
+        else:
+            run_ended = False
+            total_running_time = 0
+            iteration = 0
+            while not run_ended:
+                try:
+                    start_time = time.time()
+                    alg_output = next(experiment_gen)
+                    end_time = time.time()
+
+                    total_running_time += end_time - start_time
+                    result = {'iter': iteration,
+                              'iter_running_time_s': end_time - start_time,
+                              'total_running_time_s': total_running_time}
+                    yield alg_output, result
+                    iteration += 1
+                except StopIteration:
+                    run_ended = True
+
+    def run_static(self, dataset: alglab.dataset.Dataset, params: Dict):
         if not isinstance(dataset, self.dataset_class):
             raise TypeError("Provided dataset type must match dataset_class expected by the implementation.")
 
@@ -166,19 +214,35 @@ class Algorithm(object):
             if param not in self.all_parameter_names:
                 raise ValueError("Unexpected parameter name.")
 
-        result = None
-        running_times = {}
-        start_time = time.time()
-        for step in self.implementation:
-            result, running_time = step.run(dataset, params, previous_step_output=result)
-            running_times[f'{step.name}_running_time_s'] = running_time
-        end_time = time.time()
-        running_times['running_time_s'] = end_time - start_time
+        last_output = None
+        last_results = None
+        if self.number_of_steps > 1:
+            last_output, last_results = self.__run_multi_step(dataset, params)
+        else:
+            for output, result in self.__run_single_step(dataset, params):
+                last_output = output
+                last_results = result
 
-        if not isinstance(result, self.return_type):
+        if not isinstance(last_output, self.return_type):
             raise TypeError("Provided result type must match promised return_type.")
 
-        return result, running_times
+        return last_output, last_results
+
+    def run_dynamic(self, dataset: alglab.dataset.Dataset, params: Dict):
+        if not isinstance(dataset, self.dataset_class):
+            raise TypeError("Provided dataset type must match dataset_class expected by the implementation.")
+
+        for param in params.keys():
+            if param not in self.all_parameter_names:
+                raise ValueError("Unexpected parameter name.")
+
+        if self.number_of_steps > 1:
+            raise NotImplementedError("Dynamic multi-step algorithms are not supported.")
+        else:
+            yield from self.__run_single_step(dataset, params)
+
+    def run(self, dataset: alglab.dataset.Dataset, params: Dict):
+        return self.run_static(dataset, params)
 
     def __repr__(self):
         return self.name

@@ -42,6 +42,6 @@ def test_plots_multiple_parameters():
         evaluators=[alglab.evaluation.adjusted_rand_index]
     )
     results = experiments.run_all()
-    results.line_plot('n', 'running_time_s', fixed_parameters={'noise': noise_parameters[0]})
+    results.line_plot('n', 'total_running_time_s', fixed_parameters={'noise': noise_parameters[0]})
 
 

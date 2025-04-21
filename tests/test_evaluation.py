@@ -65,6 +65,12 @@ def test_num_vertices():
     assert num_vertices == 100
 
 
+def test_n():
+    data = alglab.dataset.PointCloudDataset(np.asarray([[1, 2], [2, 3]]))
+    num_datapoints = alglab.evaluation.dataset_size.apply(data, None)
+    assert num_datapoints == 2
+
+
 def test_avg_degree():
     avg_degree = alglab.evaluation.avg_degree.apply(alglab.dataset.NoDataset(),
                                                    stag.graph.cycle_graph(100))

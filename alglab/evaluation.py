@@ -100,6 +100,18 @@ adjusted_rand_index = Evaluator(__ari_impl,
 
 
 # -----------------------------------------------------------------------------
+# Helpful hacks
+# -----------------------------------------------------------------------------
+def __n_impl(data: alglab.dataset.PointCloudDataset, _):
+    return data.n
+
+
+dataset_size = Evaluator(__n_impl,
+                         name="n",
+                         alg_result_type=object,
+                         dataset_class=alglab.dataset.PointCloudDataset)
+
+# -----------------------------------------------------------------------------
 # Graph Evaluation
 # -----------------------------------------------------------------------------
 

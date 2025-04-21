@@ -18,6 +18,28 @@ def sc(data: alglab.dataset.PointCloudDataset, k=10):
     return sklearn_sc.labels_
 
 
+def dynamic_kmeans(data: alglab.dataset.DynamicPointCloudDataset, k=10):
+    current_data = []
+    for iteration in range(data.num_updates):
+        insertions, _ = data.get_update(iteration)
+        for new_index in insertions:
+            current_data.append(data.data[new_index, :].tolist())
+        sklearn_km = KMeans(n_clusters=k)
+        sklearn_km.fit(current_data)
+        yield sklearn_km.labels_
+
+
+def dynamic_sc(data: alglab.dataset.DynamicPointCloudDataset, k=10):
+    current_data = []
+    for iteration in range(data.num_updates):
+        insertions, _ = data.get_update(iteration)
+        for new_index in insertions:
+            current_data.append(data.data[new_index, :].tolist())
+        sklearn_sc = SpectralClustering(n_clusters=k)
+        sklearn_sc.fit(current_data)
+        yield sklearn_sc.labels_
+
+
 def test_experimental_suite():
     # Test the experimental suite class as it's intended to be used.
     alg1 = alglab.algorithm.Algorithm(kmeans)
@@ -144,4 +166,21 @@ def test_multi_step_algs():
     results = experiments.run_all()
     results.line_plot("n", "fit_running_time_s")
     results.line_plot("n", "predict_running_time_s")
-    results.line_plot("n", "running_time_s")
+    results.line_plot("n", "total_running_time_s")
+
+
+def test_dynamic_algs():
+    two_moons = alglab.dataset.TwoMoonsDataset()
+    dynamic_two_moons = alglab.dataset.DynamicPointCloudDataset.from_pointcloud(two_moons, 100)
+
+    assert(dynamic_two_moons.num_updates == 10)
+
+    experiments = alglab.experiment.ExperimentalSuite([dynamic_kmeans, dynamic_sc],
+                                                      dynamic_two_moons,
+                                                      "results/dynamictwomoonsresults.csv",
+                                                      evaluators=[alglab.evaluation.adjusted_rand_index,
+                                                                  alglab.evaluation.dataset_size])
+    results = experiments.run_all()
+
+    # Plot the per-iteration running times for each algorithm
+    results.line_plot("n", "total_running_time_s")
