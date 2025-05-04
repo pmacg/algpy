@@ -17,7 +17,7 @@ This makes it easy to extend and modify experimental setups by changing the data
 
 Here's a simple example of the workflow using datasets and evaluation functions already provided by alglab.
 
-```{python}
+```python
 def main():
     # First, implement the algorithms that you would like to compare.
     # Note that the signature of the implemented algorithms should take a dataset as the first argument,
