@@ -1,7 +1,7 @@
 """
 Methods for evaluating the performance of an algorithm.
 """
-from typing import Callable, Type, get_type_hints
+from typing import Callable, Type, get_type_hints, Union, List
 import numpy as np
 import alglab
 import stag.cluster
@@ -66,10 +66,10 @@ class Evaluator(object):
 
     def apply(self, dataset: alglab.dataset.Dataset, alg_result):
         if not isinstance(dataset, self.dataset_class):
-            raise TypeError(f"Expected dataset type to be {self.dataset_class}, got {type(dataset)}.")
+            raise TypeError(f"Alglab Evaluation Error: Expected dataset type to be {self.dataset_class}, got {type(dataset)}.")
 
         if not isinstance(alg_result, self.alg_result_type):
-            raise TypeError(f"Expected alg_result type to be {self.alg_result_type} but got {type(alg_result)}.")
+            raise TypeError(f"Alglab Evaluation Error: expected algorithm output type to be {self.alg_result_type} but got {type(alg_result)}.")
 
         if self.dataset_class is not alglab.dataset.NoDataset:
             result = self.implementation(dataset, alg_result)
@@ -87,6 +87,19 @@ class Evaluator(object):
 
 
 def __ari_impl(data: alglab.dataset.ClusterableDataset, labels):
+    # Remove any negative cluster ids
+    next_cluster_id = np.max(labels) + 1
+    mapping = {}
+    indices_to_change = []
+    for i, label in enumerate(labels):
+        if label < 0:
+            if label not in mapping:
+                mapping[label] = next_cluster_id
+                next_cluster_id += 1
+            indices_to_change.append(i)
+    for i in indices_to_change:
+        labels[i] = mapping[labels[i]]
+
     if data.gt_labels is not None:
         return stag.cluster.adjusted_rand_index(data.gt_labels, labels)
     else:

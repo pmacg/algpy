@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "alglab"
-version = "0.6.0"
+version = "0.6.1"
 authors = [
   { name="Peter Macgregor", email="prm4@st-andrews.ac.uk" },
 ]

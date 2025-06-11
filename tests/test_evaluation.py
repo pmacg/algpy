@@ -5,6 +5,7 @@ import stag.random
 import stag.cluster
 from sklearn.cluster import KMeans
 import numpy as np
+from random import randint
 import alglab
 
 
@@ -35,6 +36,35 @@ def test_ari_no_gt():
     labels = np.asarray([0, 1])
     with pytest.raises(ValueError, match="ground truth labels"):
         _ = alglab.evaluation.adjusted_rand_index.apply(data, labels)
+
+
+def test_ari_negative_values():
+    # Create a dataset
+    data = alglab.dataset.BlobsDataset(k=2)
+
+    # Get some labels
+    kmeans_labels = kmeans_impl(data, k=2)
+
+    # Set some of the labels to -1
+    for _ in range(10):
+        index = randint(0, len(kmeans_labels) - 1)
+        kmeans_labels[index] = -1
+
+    # Compute the ari
+    kmeans_ari = alglab.evaluation.adjusted_rand_index.apply(data, kmeans_labels)
+    assert 1 > kmeans_ari > 0
+
+
+def test_ari_single_cluster():
+    # Create a dataset
+    data = alglab.dataset.CirclesDataset()
+
+    # Create some labels with a single cluster
+    labels = np.asarray([0] * data.n)
+
+    # Compute the ARI
+    ari = alglab.evaluation.adjusted_rand_index.apply(data, labels)
+    assert ari == 0
 
 
 def test_ari_wrong_dataset_type():
