@@ -1,5 +1,5 @@
 """Implementation of the Dataset object for use with algpy."""
-from sklearn.datasets import make_moons, fetch_openml
+from sklearn.datasets import make_moons, fetch_openml, make_blobs, make_circles
 from sklearn.neighbors import kneighbors_graph
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -155,6 +155,30 @@ class TwoMoonsDataset(PointCloudDataset):
 
     def __str__(self):
         return f"TwoMoonsDataset({self.n})"
+
+
+class BlobsDataset(PointCloudDataset):
+    """The toy blobs dataset from sklearn."""
+
+    def __init__(self, n=1000, d=2, k=3):
+        """Initialise the blobs dataset. Optionally, provide the number of points, dimensions, and clusters."""
+        x, y = make_blobs(n_samples=n, n_features=d, centers=k)
+        PointCloudDataset.__init__(self, data=x, labels=y)
+
+    def __str__(self):
+        return f"BlobsDataset({self.n}, {self.d}, {self.k})"
+
+
+class CirclesDataset(PointCloudDataset):
+    """The toy circles dataset from sklearn."""
+
+    def __init__(self, n=1000, noise=0.07):
+        """Initialise the circles dataset. Optionally, provide the number of points and the noise parameter."""
+        x, y = make_circles(n_samples=int(n), noise=noise)
+        PointCloudDataset.__init__(self, data=x, labels=y)
+
+    def __str__(self):
+        return f"CirclesDataset({self.n})"
 
 
 class OpenMLDataset(PointCloudDataset):

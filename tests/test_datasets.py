@@ -71,6 +71,26 @@ def test_twomoons_dataset(monkeypatch):
     dataset.plot_clusters(dataset.gt_labels)
 
 
+def test_blobs_dataset(monkeypatch):
+    monkeypatch.setattr(plt, 'show', lambda: None)
+
+    # Check that we can create the two moons dataset
+    dataset = alglab.dataset.BlobsDataset(n=200)
+
+    # Check that we can plot the dataset
+    dataset.plot_clusters(dataset.gt_labels)
+
+
+def test_circles_dataset(monkeypatch):
+    monkeypatch.setattr(plt, 'show', lambda: None)
+
+    # Check that we can create the two moons dataset
+    dataset = alglab.dataset.CirclesDataset(n=200, noise=0.02)
+
+    # Check that we can plot the dataset
+    dataset.plot_clusters(dataset.gt_labels)
+
+
 def test_knearest_neighbour_dataset(monkeypatch):
     monkeypatch.setattr(plt, 'show', lambda: None)
 

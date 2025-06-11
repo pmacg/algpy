@@ -1,7 +1,7 @@
 # AlgLab
 Framework for performing experiments with algorithms in Python.
 
-This package provides a framework for building extendible and reproducible experiments with algorithms in python. This high-level workflow is to
+This package provides a framework for building extendable and reproducible experiments with algorithms in python. This high-level workflow is to
 
 1. Specify a dataset on which to perform an experiment.
 2. Implement the algorithms which are to be compared.
