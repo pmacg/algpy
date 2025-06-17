@@ -1,11 +1,24 @@
 """
 Create a generic class representing an algorithm which can be applied to a dataset.
 """
+import threading
 from typing import List, Type, Tuple, Callable, Dict, Union, get_type_hints
 from types import GeneratorType
 import inspect
 import alglab.dataset
 import time
+import psutil
+import os
+
+def monitor_memory(interval, stop_event, result_dict, base_memory):
+    process = psutil.Process(os.getpid())
+    peak_diff = 0
+    while not stop_event.is_set():
+        current = process.memory_info().rss
+        diff = current - base_memory
+        peak_diff = max(peak_diff, diff)
+        time.sleep(interval)
+    result_dict['peak_diff'] = peak_diff
 
 
 class AlgorithmStep(object):
@@ -146,6 +159,7 @@ class Algorithm(object):
             self.results_headings.append('iter')
             self.results_headings.append('iter_running_time_s')
         self.results_headings.append('total_running_time_s')
+        self.results_headings.append('memory_usage_mib')
 
     def __get_parameters(self):
         inferred_parameter_names = []
@@ -176,34 +190,61 @@ class Algorithm(object):
         return result, running_times
 
     def __run_single_step(self, dataset: alglab.dataset.Dataset, params: Dict):
+        # Set up the memory tracking
+        this_process = psutil.Process(os.getpid())
+        base_memory = this_process.memory_info().rss
+        memory_dict = {}
+        stop_event = threading.Event()
+        monitor_thread = threading.Thread(
+            target=monitor_memory,
+            args=(0.1, stop_event, memory_dict, base_memory)
+        )
+
+        # Run the algorithm and measure time and memory usage
+        monitor_thread.start()
         start_time = time.time()
         experiment_gen = self.implementation[0].run(dataset, params)
         end_time = time.time()
+        stop_event.set()
+        monitor_thread.join()
+        peak_memory_bytes = memory_dict.get('peak_diff', 0)
 
         if not isinstance(experiment_gen, GeneratorType):
             # This is not a dynamic algorithm - return the result
             total_running_time = end_time - start_time
             result = {'iter': 0,
                       'iter_running_time_s': end_time - start_time,
-                      'total_running_time_s': total_running_time}
+                      'total_running_time_s': total_running_time,
+                      'memory_usage_mib': peak_memory_bytes / 1024 / 1024,}
             yield experiment_gen, result
         else:
             run_ended = False
             total_running_time = 0
             iteration = 0
             while not run_ended:
+                monitor_thread = threading.Thread(
+                    target=monitor_memory,
+                    args=(0.1, stop_event, memory_dict, base_memory)
+                )
+                monitor_thread.start()
                 try:
                     start_time = time.time()
                     alg_output = next(experiment_gen)
                     end_time = time.time()
+                    stop_event.set()
+                    monitor_thread.join()
+                    peak_memory_bytes = memory_dict.get('peak_diff', 0)
 
                     total_running_time += end_time - start_time
                     result = {'iter': iteration,
                               'iter_running_time_s': end_time - start_time,
-                              'total_running_time_s': total_running_time}
+                              'total_running_time_s': total_running_time,
+                              'memory_usage_mib': peak_memory_bytes / 1024 / 1024,}
                     yield alg_output, result
                     iteration += 1
                 except StopIteration:
+                    stop_event.set()
+                    monitor_thread.join()
                     run_ended = True
 
     def run_static(self, dataset: alglab.dataset.Dataset, params: Dict):
