@@ -82,6 +82,27 @@ def test_multiple_runs():
     experiments.run_all()
 
 
+def test_memory_measurements():
+    alg1 = alglab.algorithm.Algorithm(kmeans)
+    alg2 = alglab.algorithm.Algorithm(sc)
+
+    experiments = alglab.experiment.ExperimentalSuite(
+        [alg1, alg2],
+        alglab.dataset.TwoMoonsDataset,
+        "results/twomoonsresults.csv",
+        parameters={
+            "kmeans.k": 2,
+            "sc.k": 2,
+            "dataset.n": np.linspace(1000, 3000, 3),
+            "dataset.noise": 0.5,
+        },
+        evaluators=[alglab.evaluation.adjusted_rand_index],
+        num_runs=1,
+    )
+    results = experiments.run_all()
+    results.line_plot('n', 'memory_usage_mib')
+
+
 def test_dynamic_params():
     alg1 = alglab.algorithm.Algorithm(kmeans)
     alg2 = alglab.algorithm.Algorithm(sc)

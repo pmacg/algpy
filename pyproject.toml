@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "alglab"
-version = "0.6.1"
+version = "0.7.0"
 authors = [
   { name="Peter Macgregor", email="prm4@st-andrews.ac.uk" },
 ]
@@ -25,6 +25,7 @@ dependencies = [
     "build",
     "pytest",
     "scipy",
+    "psutil",
 ]
 
 [project.urls]

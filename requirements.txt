@@ -6,3 +6,4 @@ pandas
 build
 pytest
 scipy
+psutil
