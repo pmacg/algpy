@@ -162,4 +162,4 @@ cython_debug/
 .idea/
 
 # Ignore results from test cases
-tests/results/*.csv
+**/*.csv
