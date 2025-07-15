@@ -1,57 +1,49 @@
 """Tests for the experiment module."""
 from sklearn.cluster import KMeans, SpectralClustering
+from sklearn.mixture import GaussianMixture
 import numpy as np
 import pytest
 import alglab
 
+class DynamicKMeans(object):
 
-# We will use this KMeans implementation throughout the tests.
-def kmeans(data: alglab.dataset.PointCloudDataset, k=10):
-    sklearn_km = KMeans(n_clusters=k)
-    sklearn_km.fit(data.data)
-    return sklearn_km.labels_
+    def __init__(self, k=10):
+        self.current_data = []
+        self.k = k
 
+    def add_point(self, new_point: np.ndarray):
+        self.current_data.append(new_point.tolist())
 
-def sc(data: alglab.dataset.PointCloudDataset, k=10):
-    sklearn_sc = SpectralClustering(n_clusters=k)
-    sklearn_sc.fit(data.data)
-    return sklearn_sc.labels_
-
-
-def dynamic_kmeans(data: alglab.dataset.DynamicPointCloudDataset, k=10):
-    current_data = []
-    for iteration in range(data.num_updates):
-        insertions, _ = data.get_update(iteration)
-        for new_index in insertions:
-            current_data.append(data.data[new_index, :].tolist())
-        sklearn_km = KMeans(n_clusters=k)
-        sklearn_km.fit(current_data)
-        yield sklearn_km.labels_
+    def predict(self):
+        sklearn_km = KMeans(n_clusters=self.k)
+        sklearn_km.fit(self.current_data)
+        return sklearn_km.labels_
 
 
-def dynamic_sc(data: alglab.dataset.DynamicPointCloudDataset, k=10):
-    current_data = []
-    for iteration in range(data.num_updates):
-        insertions, _ = data.get_update(iteration)
-        for new_index in insertions:
-            current_data.append(data.data[new_index, :].tolist())
-        sklearn_sc = SpectralClustering(n_clusters=k)
-        sklearn_sc.fit(current_data)
-        yield sklearn_sc.labels_
+class DynamicSC(object):
+
+    def __init__(self, k=10):
+        self.current_data = []
+        self.k = k
+
+    def add_point(self, new_point: np.ndarray):
+        self.current_data.append(new_point.tolist())
+
+    def predict(self):
+        sklearn_km = SpectralClustering(n_clusters=self.k)
+        sklearn_km.fit(self.current_data)
+        return sklearn_km.labels_
 
 
 def test_experimental_suite():
-    # Test the experimental suite class as it's intended to be used.
-    alg1 = alglab.algorithm.Algorithm(kmeans)
-    alg2 = alglab.algorithm.Algorithm(sc)
-
     experiments = alglab.experiment.ExperimentalSuite(
-        [alg1, alg2],
+        [KMeans, SpectralClustering],
         alglab.dataset.TwoMoonsDataset,
+        alglab.experiment.StaticClusteringSchedule,
         "results/twomoonsresults.csv",
         parameters={
-            "kmeans.k": 2,
-            "sc.k": 2,
+            "KMeans.n_clusters": 2,
+            "SpectralClustering.n_clusters": 2,
             "dataset.n": 1000,
             "dataset.noise": np.linspace(0, 1, 5),
         },
@@ -62,16 +54,14 @@ def test_experimental_suite():
 
 def test_multiple_runs():
     # Test the experimental suite class as it's intended to be used.
-    alg1 = alglab.algorithm.Algorithm(kmeans)
-    alg2 = alglab.algorithm.Algorithm(sc)
-
     experiments = alglab.experiment.ExperimentalSuite(
-        [alg1, alg2],
+        [KMeans, SpectralClustering],
         alglab.dataset.TwoMoonsDataset,
+        alglab.experiment.StaticClusteringSchedule,
         "results/twomoonsresults.csv",
         parameters={
-            "kmeans.k": 2,
-            "sc.k": 2,
+            "KMeans.n_clusters": 2,
+            "SpectralClustering.n_clusters": 2,
             "dataset.n": 1000,
             "dataset.noise": np.linspace(0, 1, 5),
         },
@@ -83,16 +73,14 @@ def test_multiple_runs():
 
 
 def test_memory_measurements():
-    alg1 = alglab.algorithm.Algorithm(kmeans)
-    alg2 = alglab.algorithm.Algorithm(sc)
-
     experiments = alglab.experiment.ExperimentalSuite(
-        [alg1, alg2],
+        [KMeans, SpectralClustering],
         alglab.dataset.TwoMoonsDataset,
+        alglab.experiment.StaticClusteringSchedule,
         "results/twomoonsresults.csv",
         parameters={
-            "kmeans.k": 2,
-            "sc.k": 2,
+            "KMeans.n_clusters": 2,
+            "SpectralClustering.n_clusters": 2,
             "dataset.n": np.linspace(1000, 3000, 3),
             "dataset.noise": 0.5,
         },
@@ -104,16 +92,14 @@ def test_memory_measurements():
 
 
 def test_dynamic_params():
-    alg1 = alglab.algorithm.Algorithm(kmeans)
-    alg2 = alglab.algorithm.Algorithm(sc)
-
     experiments = alglab.experiment.ExperimentalSuite(
-        [alg1, alg2],
+        [KMeans, SpectralClustering],
         alglab.dataset.TwoMoonsDataset,
+        alglab.experiment.StaticClusteringSchedule,
         "results/twomoonsresults.csv",
         parameters={
-            "kmeans.k": 2,
-            "sc.k": [(lambda p: int(p['n'] / 100)), 2],
+            "KMeans.n_clusters": 2,
+            "SpectralClustering.n_clusters": [(lambda p: int(p['n'] / 100)), 2],
             "dataset.noise": 0.1,
             "dataset.n": np.linspace(100, 1000, 5).astype(int),
         },
@@ -123,31 +109,33 @@ def test_dynamic_params():
 
 
 def test_simple_configuration():
-    experiments = alglab.experiment.ExperimentalSuite([kmeans, sc],
+    experiments = alglab.experiment.ExperimentalSuite([KMeans, SpectralClustering],
                                                       alglab.dataset.TwoMoonsDataset,
+                                                      alglab.experiment.StaticClusteringSchedule,
                                                       "results/twomoonsresults.csv")
     experiments.run_all()
 
 
 def test_simple_with_custom_evaluator():
-    def const_evaluator(data, alg_output):
+    def const_evaluator(expected_output, alg_output):
         return 5
 
-    experiments = alglab.experiment.ExperimentalSuite([kmeans, sc],
+    experiments = alglab.experiment.ExperimentalSuite([KMeans, SpectralClustering],
                                                       alglab.dataset.TwoMoonsDataset,
+                                                      alglab.experiment.StaticClusteringSchedule,
                                                       "results/twomoonsresults.csv",
                                                       evaluators=[const_evaluator])
     experiments.run_all()
 
 
 def test_wrong_alg_name():
-    algs = [alglab.algorithm.Algorithm(kmeans),
-            alglab.algorithm.Algorithm(sc)]
+    algs = [KMeans, SpectralClustering]
 
     with pytest.raises(ValueError, match='algorithm'):
         experiments = alglab.experiment.ExperimentalSuite(
             algs,
             alglab.dataset.TwoMoonsDataset,
+            alglab.experiment.StaticClusteringSchedule,
             "results/twomoonsresults.csv",
             parameters={
                 "spectral_clustering.k": 2,
@@ -159,49 +147,39 @@ def test_wrong_alg_name():
 
 
 def test_multi_step_algs():
-    def kmeans_init(data: alglab.dataset.PointCloudDataset, k=10):
-        return KMeans(n_clusters=k)
-
-    def kmeans_predict(kmeans_obj, data: alglab.dataset.PointCloudDataset) -> np.ndarray:
-        kmeans_obj.fit(data.data)
-        return kmeans_obj.labels_
-
-    def kmeans_slow_predict(kmeans_obj, data: alglab.dataset.PointCloudDataset) -> np.ndarray:
-        kmeans_obj.fit(data.data)
-        kmeans_obj.fit(data.data)
-        return kmeans_obj.labels_
-
-    alg1 = alglab.algorithm.Algorithm([('fit', kmeans_init), ('predict', kmeans_predict)], name='kmeans')
-    alg2 = alglab.algorithm.Algorithm([('fit', kmeans_init), ('predict', kmeans_slow_predict)], name='slow_kmeans')
-
     experiments = alglab.experiment.ExperimentalSuite(
-        [alg1, alg2],
+        [KMeans, GaussianMixture],
         alglab.dataset.TwoMoonsDataset,
+        alglab.experiment.FitPredictSchedule,
         "results/twomoonsresults.csv",
         parameters={
-            "k": 2,
+            "KMeans.n_clusters": 2,
+            "GaussianMixture.n_components": 2,
             "dataset.n": np.linspace(100, 1000, 6),
         },
+        evaluators=[alglab.evaluation.adjusted_rand_index],
     )
 
     results = experiments.run_all()
-    results.line_plot("n", "fit_running_time_s")
-    results.line_plot("n", "predict_running_time_s")
+    results.line_plot("n", "fit_total_running_time_s")
+    results.line_plot("n", "predict_total_running_time_s")
     results.line_plot("n", "total_running_time_s")
 
 
 def test_dynamic_algs():
-    two_moons = alglab.dataset.TwoMoonsDataset()
-    dynamic_two_moons = alglab.dataset.DynamicPointCloudDataset.from_pointcloud(two_moons, 100)
-
-    assert(dynamic_two_moons.num_updates == 10)
-
-    experiments = alglab.experiment.ExperimentalSuite([dynamic_kmeans, dynamic_sc],
-                                                      dynamic_two_moons,
+    experiments = alglab.experiment.ExperimentalSuite([DynamicKMeans, DynamicSC],
+                                                      alglab.dataset.TwoMoonsDataset,
+                                                      alglab.experiment.DynamicClusteringSchedule,
                                                       "results/dynamictwomoonsresults.csv",
+                                                      parameters={
+                                                          "DynamicKMeans.k": 2,
+                                                          "DynamicSC.k": 2,
+                                                          "schedule.batch_size": 100,
+                                                      },
                                                       evaluators=[alglab.evaluation.adjusted_rand_index,
                                                                   alglab.evaluation.dataset_size])
     results = experiments.run_all()
 
     # Plot the per-iteration running times for each algorithm
-    results.line_plot("n", "total_running_time_s")
+    results.line_plot("dataset_size", "total_running_time_s")
+
