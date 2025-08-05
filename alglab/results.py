@@ -53,6 +53,11 @@ class Results(object):
         if algorithm_names is None:
             algorithm_names = {}
 
+        fig, ax = plt.subplots(figsize=(4, 3))
+        plt.xlabel(x_col)
+        plt.ylabel(y_col)
+        plt.grid(True)
+
         if x_col not in ['iter']:
             x_col = f"_mean_{x_col}"
 
@@ -60,11 +65,6 @@ class Results(object):
         results_to_plot = self.stats_df
         for param, val in fixed_parameters.items():
             results_to_plot = results_to_plot[results_to_plot[f'_mean_{param}'] == val]
-
-        fig, ax = plt.subplots(figsize=(4, 3))
-        plt.xlabel(x_col)
-        plt.ylabel(y_col)
-        plt.grid(True)
 
         for alg_name in self.algorithm_names:
             if alg_name not in ignore_algorithms:
@@ -93,6 +93,7 @@ class Results(object):
             plt.legend()
         if filename:
             plt.savefig(filename, format="pdf", bbox_inches="tight")
+        plt.tight_layout()
         plt.show()
 
     def bar_plot(self, x_col, y_col, x_vals, filename=None,

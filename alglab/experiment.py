@@ -140,7 +140,8 @@ class Experiment(object):
 
     def __init__(self, alg: Type,
                  schedule: ExperimentSchedule, params,
-                 evaluators = None):
+                 evaluators = None,
+                 track_memory = False):
         """An experiment is a single instance of running an algorithm with a set of parameters according
         to some experiment schedule which indicates the order in which algorithm methods should be executed.
         The running time of the algorithm is measured by default. In addition to this, the evaluation_functions
@@ -150,6 +151,7 @@ class Experiment(object):
         self.schedule = schedule
         self.params = params
         self.evaluators = evaluators
+        self.track_memory = track_memory
 
     def run(self):
         """Run the experiment."""
@@ -172,11 +174,13 @@ class Experiment(object):
         total_running_time = 0
         for method_name, data, expected_result in self.schedule.schedule():
             # Run the algorithm and measure time and memory usage
-            monitor_thread = threading.Thread(
-                target=monitor_memory,
-                args=(0.1, stop_event, memory_dict, base_memory)
-            )
-            monitor_thread.start()
+            monitor_thread = None
+            if self.track_memory:
+                monitor_thread = threading.Thread(
+                    target=monitor_memory,
+                    args=(0.1, stop_event, memory_dict, base_memory)
+                )
+                monitor_thread.start()
             start_time = time.time()
             method_to_run = getattr(alg_obj, method_name)
             if data is None:
@@ -185,8 +189,11 @@ class Experiment(object):
                 alg_output = method_to_run(data)
             end_time = time.time()
             stop_event.set()
-            monitor_thread.join()
-            peak_memory_bytes = memory_dict.get('peak_diff', 0)
+            if monitor_thread is not None:
+                monitor_thread.join()
+                peak_memory_bytes = memory_dict.get('peak_diff', 0)
+            else:
+                peak_memory_bytes = 0
             total_running_time += end_time - start_time
             iter_running_time += end_time - start_time
 
@@ -232,7 +239,8 @@ class ExperimentalSuite(object):
                  results_filename: str,
                  num_runs: int = 1,
                  parameters: Dict = None,
-                 evaluators: List[Callable] = None):
+                 evaluators: List[Callable] = None,
+                 track_memory: bool = False):
         """Run a suite of experiments while varying some parameters.
 
         Varying parameter dictionaries should have parameter names as keys and the values should be an iterable containing:
@@ -240,6 +248,7 @@ class ExperimentalSuite(object):
             - functions, taking fixed and statically defined variable parameters and returning a parameter value
         """
         self.num_runs = num_runs
+        self.track_memory = track_memory
 
         if num_runs < 1:
             raise ValueError('num_runs must be greater than or equal to 1')
@@ -440,7 +449,8 @@ class ExperimentalSuite(object):
                                 resolved_varying_alg_params = resolve_parameters(full_dataset_params | self.alg_fixed_params[alg_name], alg_params)
                                 full_alg_params = self.alg_fixed_params[alg_name] | resolved_varying_alg_params
                                 print(f"Trial {reported_trial_number} / {self.num_trials}: {alg_name} on {dataset} with parameters {full_alg_params}")
-                                this_experiment = Experiment(alg, schedule, full_alg_params, self.evaluators)
+                                this_experiment = Experiment(alg, schedule, full_alg_params, self.evaluators,
+                                                             track_memory=self.track_memory)
 
                                 for result in this_experiment.run():
                                     this_result = result | full_dataset_params | full_alg_params | full_schedule_params | \

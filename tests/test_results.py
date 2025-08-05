@@ -10,7 +10,8 @@ def test_plots():
     results = Results("results/results.csv")
     assert results.num_runs == 2
 
-    results.line_plot('noise', 'running_time_s')
+    results.line_plot('noise', 'total_running_time_s',
+                      fixed_parameters={'n': 1000})
 
 
 def test_plots_multiple_parameters():
@@ -23,7 +24,8 @@ def test_plots_multiple_parameters():
         parameters={'n_clusters': 2,
                     'dataset.noise': noise_parameters,
                     'dataset.n': np.linspace(100, 1000, 3).astype(int)},
-        evaluators=[alglab.evaluation.adjusted_rand_index]
+        evaluators=[alglab.evaluation.adjusted_rand_index],
+        num_runs=2,
     )
     results = experiments.run_all()
     results.line_plot('n', 'total_running_time_s', fixed_parameters={'noise': noise_parameters[0]})

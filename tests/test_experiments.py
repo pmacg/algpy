@@ -86,6 +86,7 @@ def test_memory_measurements():
         },
         evaluators=[alglab.evaluation.adjusted_rand_index],
         num_runs=1,
+        track_memory=True
     )
     results = experiments.run_all()
     results.line_plot('n', 'memory_usage_mib')
