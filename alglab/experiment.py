@@ -11,6 +11,7 @@ import psutil
 import os
 import threading
 import numpy as np
+from pympler import asizeof
 
 import alglab.dataset
 import alglab.results
@@ -174,13 +175,6 @@ class Experiment(object):
         total_running_time = 0
         for method_name, data, expected_result in self.schedule.schedule():
             # Run the algorithm and measure time and memory usage
-            monitor_thread = None
-            if self.track_memory:
-                monitor_thread = threading.Thread(
-                    target=monitor_memory,
-                    args=(0.1, stop_event, memory_dict, base_memory)
-                )
-                monitor_thread.start()
             start_time = time.time()
             method_to_run = getattr(alg_obj, method_name)
             if data is None:
@@ -189,9 +183,8 @@ class Experiment(object):
                 alg_output = method_to_run(data)
             end_time = time.time()
             stop_event.set()
-            if monitor_thread is not None:
-                monitor_thread.join()
-                peak_memory_bytes = memory_dict.get('peak_diff', 0)
+            if self.track_memory:
+                peak_memory_bytes = asizeof.asizeof(alg_obj)
             else:
                 peak_memory_bytes = 0
             total_running_time += end_time - start_time
