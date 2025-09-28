@@ -145,7 +145,8 @@ def test_dynamic_params():
             "dataset.noise": 0.1,
             "dataset.n": np.linspace(100, 1000, 5).astype(int),
         },
-        evaluators=[alglab.evaluation.adjusted_rand_index]
+        evaluators=[alglab.evaluation.adjusted_rand_index,
+                    alglab.evaluation.normalised_mutual_information]
     )
     experiments.run_all()
 

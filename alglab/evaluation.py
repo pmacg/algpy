@@ -30,6 +30,13 @@ def adjusted_rand_index(gt_labels, labels):
         raise ValueError('No ground truth labels provided.')
 
 
+def normalised_mutual_information(gt_labels, labels):
+    if gt_labels is not None:
+        return stag.cluster.normalised_mutual_information(gt_labels, labels)
+    else:
+        raise ValueError('No ground truth labels provided.')
+
+
 def dataset_size(gt_labels, _):
     return len(gt_labels)
 
