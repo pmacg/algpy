@@ -86,10 +86,12 @@ class FitPredictSchedule(ExperimentSchedule):
 
 
 class DynamicClusteringSchedule(ExperimentSchedule):
-    def __init__(self, dataset: alglab.dataset.ClusterableDataset, batch_size=1000, stream_by_cluster=False):
+    def __init__(self, dataset: alglab.dataset.ClusterableDataset, batch_size=1000, stream_by_cluster=False,
+                 num_batches=None):
         super().__init__(dataset)
         self.batch_size = batch_size
         self.stream_by_cluster = stream_by_cluster
+        self.max_num_batches = num_batches if num_batches is not None else float('inf')
 
     def schedule(self):
         if self.stream_by_cluster:
@@ -109,7 +111,7 @@ class DynamicClusteringSchedule(ExperimentSchedule):
 
         current_n = 0
         num_since_last_query = 0
-        while current_n < self.dataset.n:
+        while current_n < self.dataset.n and current_n < self.max_num_batches * self.batch_size:
             yield 'add_point', reordered_data[current_n, :], None
             num_since_last_query += 1
             current_n += 1
@@ -399,6 +401,11 @@ class ExperimentalSuite(object):
 
     def run_all(self, append_results=False) -> alglab.results.Results:
         """Run all the experiments in this suite."""
+
+        # There is a weird bug in asizeof causing occasional failures involving numpy arrays. It seems
+        # not to occur if we first call asizeof on a new numpy array.
+        # See https://github.com/pympler/pympler/issues/151.
+        asizeof.asizeof(np.array([1, 2, 3]))
 
         # If we are appending the results, make sure that the header of the results file already matches the
         # header we would have written.

@@ -4,6 +4,7 @@ from sklearn.mixture import GaussianMixture
 import numpy as np
 import pytest
 import alglab
+from pympler import asizeof
 
 class DynamicKMeans(object):
 
@@ -12,6 +13,23 @@ class DynamicKMeans(object):
         self.k = k
 
     def add_point(self, new_point: np.ndarray):
+        self.current_data.append(new_point.tolist())
+
+    def predict(self):
+        sklearn_km = KMeans(n_clusters=self.k)
+        sklearn_km.fit(self.current_data)
+        return sklearn_km.labels_
+
+
+class DynamicKMeansNP(object):
+    """Define an algorithm object which stores numpy data."""
+    def __init__(self, k=10):
+        self.current_data = []
+        self.numpy_data = None
+        self.k = k
+
+    def add_point(self, new_point: np.ndarray):
+        self.numpy_data = new_point
         self.current_data.append(new_point.tolist())
 
     def predict(self):
@@ -70,6 +88,29 @@ def test_multiple_runs():
     )
     assert experiments.num_trials == 20
     experiments.run_all()
+
+
+def test_bad_asizeof():
+    """This tests a weird error in asizeof implementation based on numpy arrays."""
+    experiments = alglab.experiment.ExperimentalSuite(
+        [DynamicKMeansNP],
+        alglab.dataset.OpenMLDataset,
+        alglab.experiment.DynamicClusteringSchedule,
+        "results/twomoonsresults.csv",
+        parameters={
+            "dataset.name": ['letter'],
+            "DynamicKMeansNP.k": 2,
+            "schedule.batch_size": 100,
+            "schedule.num_batches": 10,
+        },
+        evaluators=[alglab.evaluation.adjusted_rand_index,
+                    alglab.evaluation.dataset_size],
+        track_memory=True,
+    )
+    results = experiments.run_all()
+
+    # Plot the per-iteration running times for each algorithm
+    results.line_plot("dataset_size", "memory_usage_mib")
 
 
 def test_memory_measurements():
