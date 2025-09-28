@@ -3,13 +3,13 @@ from alglab.results import Results
 import alglab.experiment
 from sklearn.cluster import KMeans, SpectralClustering
 import numpy as np
+import sys
 
 
 def test_plots():
     # Run a simple experiment
     results = Results("results/results.csv")
     assert results.num_runs == 2
-
     results.line_plot('noise', 'total_running_time_s',
                       fixed_parameters={'n': 1000})
 

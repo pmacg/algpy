@@ -94,7 +94,7 @@ class Results(object):
         if filename:
             plt.savefig(filename, format="pdf", bbox_inches="tight")
         plt.tight_layout()
-        plt.show()
+        return fig, ax
 
     def bar_plot(self, x_col, y_col, x_vals, filename=None,
                  ignore_algorithms=None,
@@ -131,5 +131,3 @@ class Results(object):
         if filename:
             plt.savefig(filename, format="pdf", bbox_inches="tight")
         plt.tight_layout()
-        plt.show()
-
