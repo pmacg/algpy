@@ -202,6 +202,10 @@ class OpenMLDataset(PointCloudDataset):
     def __init__(self, **kwargs):
         """Initialise the dataset by downloading from openML. Accepts the same arguments as the
         sklearn fetch_openml method."""
+        # Modify the kwargs to get only numerical data
+        kwargs["as_frame"] = False
+        kwargs["parser"] = "liac-arff"
+
         data_info = fetch_openml(**kwargs)
         if isinstance(data_info.data, pd.DataFrame):
             data_info.data = data_info.data.to_numpy()
@@ -212,6 +216,10 @@ class OpenMLDataset(PointCloudDataset):
                 target = target.cat.codes.to_numpy()
             else:
                 target = data_info.target.to_numpy()
+
+        # Ensure that the numpy labels are numeric
+        if isinstance(target, np.ndarray):
+            _, target = np.unique(target, return_inverse=True)
 
         PointCloudDataset.__init__(self, data=data_info.data, labels=target)
 

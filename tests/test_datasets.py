@@ -123,6 +123,20 @@ def test_pca_and_scaling():
     assert dataset.d == 2
 
 
+def test_difficult_openml_dataset_1():
+    dataset = alglab.dataset.OpenMLDataset(name="KDDCup99")
+    dataset.apply_pca(20)
+    dataset.apply_scaling()
+    assert dataset.d == 20
+
+
+def test_difficult_openml_dataset_2():
+    dataset = alglab.dataset.OpenMLDataset(name="covertype")
+    dataset.apply_pca(20)
+    dataset.apply_scaling()
+    assert dataset.d == 20
+
+
 def test_plot_dataset():
     dataset = alglab.dataset.TwoMoonsDataset()
     dataset.plot_data()

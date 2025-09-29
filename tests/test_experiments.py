@@ -113,6 +113,22 @@ def test_bad_asizeof():
     results.line_plot("dataset_size", "memory_usage_mib")
 
 
+def test_categorical_openml():
+    """Tests that openml datasets with categorical ground truth works with clustering evaluation."""
+    experiments = alglab.experiment.ExperimentalSuite(
+        [KMeans],
+        alglab.dataset.OpenMLDataset,
+        alglab.experiment.StaticClusteringSchedule,
+        "results/letterresults.csv",
+        parameters={
+            "dataset.name": ['letter'],
+
+        },
+        evaluators = [alglab.evaluation.adjusted_rand_index]
+    )
+    results = experiments.run_all()
+
+
 def test_memory_measurements():
     experiments = alglab.experiment.ExperimentalSuite(
         [KMeans, SpectralClustering],
